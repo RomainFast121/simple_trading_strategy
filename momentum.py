@@ -210,4 +210,4 @@ class MomentumStrategy:
 # source .venv/bin/activate
 # python -c "from momentum import MomentumStrategy; print('import ok')"
 # python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=1.0); s.run(); print(s.summary.to_string(index=False))"
-# python -c "from momentum import MomentumStrategy; import matplotlib.pyplot as plt; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=1.0); s.run(); s.plot_wealth(); plt.savefig('wealth.png'); print('saved wealth.png')"
+# python -c "from momentum import MomentumStrategy; import matplotlib.pyplot as plt; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=1.0); s.run(); s.plot_wealth()"

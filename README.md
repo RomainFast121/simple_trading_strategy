@@ -2,7 +2,7 @@
 
 ## Momentum Strategy
 
-This document explains the momentum strategy implemented in [momentum.py](/Users/romain/Documents/Perso/projects/Tutorial/simple_strategy/momentum.py).
+This repository currently contains a momentum strategy implemented in [momentum.py](/Users/romain/Documents/Perso/projects/Tutorial/simple_strategy/momentum.py).
 
 The goal of this strategy is to:
 - download historical price data from Yahoo Finance
@@ -158,6 +158,48 @@ Plots the compounded wealth curve using seaborn styling and a logarithmic y-axis
 
 The log scale is useful because it makes compounded growth and drawdowns easier to compare visually across time.
 
+### Installation
+
+Create and activate a local environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### How To Run
+
+Check the import:
+
+```bash
+python -c "from momentum import MomentumStrategy; print('import ok')"
+```
+
+Run the summary:
+
+```bash
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=3.0); s.run(); print(s.summary.to_string(index=False))"
+```
+
+Inspect the last rows of the backtest dataframe:
+
+```bash
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=3.0); s.run(); print(s.data[['close', 'signal', 'annual_vol', 'recent_vol', 'position', 'net_strategy_return', 'wealth']].tail(10).to_string())"
+```
+
+Generate and save the chart:
+
+```bash
+python -c "from momentum import MomentumStrategy; import matplotlib.pyplot as plt; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=3.0); s.run(); s.plot_wealth(); plt.savefig('wealth.png'); print('saved wealth.png')"
+```
+
 ### Outputs
 
 After running the strategy:
@@ -165,19 +207,9 @@ After running the strategy:
 - `self.data` contains the full bar-by-bar dataset
 - `self.summary` contains the one-row performance summary
 
-Typical inspection commands:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=3.0); s.run(); print(s.summary.to_string(index=False))"
-```
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=50, fees=0.0005, leverage=3.0); s.run(); print(s.data[['close', 'signal', 'annual_vol', 'recent_vol', 'position', 'net_strategy_return', 'wealth']].tail(10).to_string())"
-```
-
 ### Notes for Future Strategies
 
-This file is organized so more strategies can be added later as separate sections, for example:
+This README is organized so more strategies can be added later as separate sections, for example:
 
 - `## Mean Reversion Strategy`
 - `## Breakout Strategy`

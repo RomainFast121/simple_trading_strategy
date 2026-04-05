@@ -60,7 +60,6 @@ class MomentumStrategy:
 
         return (365.25 * 24 * 60 * 60) / median_seconds
 
-    @staticmethod
     # Compute rolling annualized volatility on a time window such as 365D or 30D.
     def _rolling_annualized_vol(log_returns, window, min_periods):
         rolling_std = log_returns.rolling(window=window, min_periods=min_periods).std()
@@ -131,6 +130,8 @@ class MomentumStrategy:
 
         df["wealth"] = np.exp(df["net_log_return"].fillna(0.0).cumsum())
         df["cum_fees"] = df["fee_cost"].fillna(0.0).cumsum()
+        df["running_peak"] = df["wealth"].cummax()
+        df["drawdown"] = (df["wealth"] / df["running_peak"]) - 1.0
 
         active_mask = df["position_prev"] != 0
         active_returns = df.loc[active_mask, "net_strategy_return"].dropna()
@@ -146,13 +147,16 @@ class MomentumStrategy:
         else:
             avg_return_factor = np.exp(active_log_returns.mean())
 
-        if active_log_returns.empty:
+        all_returns = df["net_strategy_return"].fillna(0.0)
+
+        if all_returns.empty:
             sharpe = np.nan
         else:
-            ret_std = active_log_returns.std(ddof=1)
+            ret_std = all_returns.std(ddof=1)
             sharpe = (
-                (active_log_returns.mean() / ret_std) * np.sqrt(periods_per_year)
-                if pd.notna(ret_std) and ret_std > 0
+                (all_returns.mean() / ret_std) * np.sqrt(periods_per_year)
+                if pd.notna(ret_std)
+                and ret_std > 0
                 else np.nan
             )
 
@@ -168,6 +172,7 @@ class MomentumStrategy:
                 "leverage": [self.leverage],
                 "total_pnl": [df["wealth"].iloc[-1] - 1 if not df.empty else np.nan],
                 "total_fees": [df["fee_cost"].sum()],
+                "max_drawdown": [df["drawdown"].min() if not df.empty else np.nan],
                 "winrate": [win_rate],
                 "average_return_factor": [avg_return_factor],
                 "sharpe_ratio_annualized": [sharpe],

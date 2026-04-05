@@ -135,12 +135,14 @@ It also computes the summary table.
 Summary metrics:
 - `total_pnl`: final compounded performance, equal to final wealth minus one
 - `total_fees`: sum of all fee costs
+- `max_drawdown`: worst peak-to-trough decline observed on the compounded wealth curve
 - `winrate`: proportion of profitable active periods
 - `average_return_factor`: average multiplicative return factor during active periods only
-- `sharpe_ratio_annualized`: annualized Sharpe ratio based on active-period net log returns
+- `sharpe_ratio_annualized`: annualized Sharpe ratio based on net simple returns, with non-trading periods counted as zero return
 
 Important implementation detail:
-- both `average_return_factor` and `sharpe_ratio_annualized` are computed only on periods where the strategy actually had a non-zero position
+- `average_return_factor` is computed only on periods where the strategy actually had a non-zero position
+- `sharpe_ratio_annualized` is computed on the full return series, with flat periods counted as zero return, so annualization stays standard without overstating sparse strategies
 
 #### `run`
 

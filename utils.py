@@ -71,7 +71,7 @@ def rolling_annualized_vol(log_returns, window, min_periods):
 
 
 # Turn a net strategy return stream into wealth, drawdown, and summary metrics.
-def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active_mask=None):
+def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta=None, active_mask=None):
     strategy_returns = pd.Series(strategy_returns, copy=False).astype(float)
     strategy_returns.index = pd.to_datetime(strategy_returns.index)
 
@@ -80,7 +80,7 @@ def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active
         raise ValueError("Not enough data points to estimate annualization.")
 
     summary_data = pd.DataFrame(index=strategy_returns.index)
-    summary_data["net_strategy_return"] = strategy_returns.fillna(0.0).clip(lower=-0.999999)
+    summary_data["net_strategy_return"] = strategy_returns.fillna(0.0)
     summary_data["net_log_return"] = np.log1p(summary_data["net_strategy_return"])
 
     if fee_cost is None:
@@ -89,10 +89,10 @@ def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active
         fee_series = pd.Series(fee_cost, copy=False).reindex(summary_data.index).fillna(0.0)
         summary_data["fee_cost"] = fee_series.astype(float)
 
-    summary_data["wealth"] = np.exp(summary_data["net_log_return"].cumsum())
-    summary_data["cum_fees"] = summary_data["fee_cost"].cumsum()
-    summary_data["running_peak"] = summary_data["wealth"].cummax()
-    summary_data["drawdown"] = (summary_data["wealth"] / summary_data["running_peak"]) - 1.0
+    summary_data["wealth"] = np.exp(summary_data["net_log_return"].cumsum()) * init_amount
+    summary_data["cum_fees"] = summary_data["fee_cost"].cumsum() * init_amount
+    summary_data["running_peak"] = summary_data["wealth"].cummax() 
+    summary_data["drawdown%"] = (summary_data["wealth"] / summary_data["running_peak"]) - 1
 
     if active_mask is None:
         active_mask = summary_data["net_strategy_return"] != 0
@@ -120,7 +120,7 @@ def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active
         {
             "total_pnl": summary_data["wealth"].iloc[-1] - 1 if not summary_data.empty else np.nan,
             "total_fees": summary_data["fee_cost"].sum(),
-            "max_drawdown": summary_data["drawdown"].min() if not summary_data.empty else np.nan,
+            "max_drawdown": summary_data["drawdown%"].min() if not summary_data.empty else np.nan,
             "winrate": win_rate,
             "average_return_factor": average_return_factor,
             "sharpe_ratio_annualized": sharpe,
@@ -131,7 +131,7 @@ def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active
 
 
 # Turn asset returns and positions into a full performance dataframe and summary metrics.
-def calculate_performance(returns, positions, fees=0.0, log_return=False, summary_meta=None):
+def calculate_performance(init_amount, returns, positions, fees=0.0005, log_return=False, summary_meta=None):
     returns = pd.Series(returns, copy=False)
     positions = pd.Series(positions, copy=False)
 
@@ -143,7 +143,7 @@ def calculate_performance(returns, positions, fees=0.0, log_return=False, summar
         data["asset_simple_return"] = np.expm1(data["asset_log_return"])
     else:
         data["asset_simple_return"] = data["input_return"].astype(float)
-        clipped_simple_return = data["asset_simple_return"].clip(lower=-0.999999)
+        clipped_simple_return = data["asset_simple_return"]
         data["asset_log_return"] = np.log1p(clipped_simple_return)
 
     data["position_prev"] = data["position"].shift(1).fillna(0.0)
@@ -155,13 +155,14 @@ def calculate_performance(returns, positions, fees=0.0, log_return=False, summar
     data["net_strategy_return"] = data["gross_strategy_return"] - data["fee_cost"]
 
     summary_data, summary = summarize_returns(
+        init_amount=init_amount,
         strategy_returns=data["net_strategy_return"],
         fee_cost=data["fee_cost"],
         summary_meta=summary_meta,
         active_mask=data["position_prev"] != 0,
     )
 
-    for column in ["net_log_return", "wealth", "cum_fees", "running_peak", "drawdown"]:
+    for column in ["net_log_return", "wealth", "cum_fees", "running_peak", "drawdown%"]:
         data[column] = summary_data[column]
     return data, summary
 

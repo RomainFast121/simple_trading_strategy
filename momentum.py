@@ -25,6 +25,8 @@ class MomentumStrategy:
         MA=20,
         fees=0.005,
         target_vol=0.10,
+        vol_window=30,
+        init_amount=1000
     ):
         self.ticker = ticker
         self.tickers = [ticker] if isinstance(ticker, str) else list(ticker)
@@ -36,6 +38,8 @@ class MomentumStrategy:
         self.ma = MA
         self.fees = fees
         self.target_vol = target_vol
+        self.vol_window = vol_window
+        self.init_amount = init_amount
 
         self.raw_data = pd.DataFrame()
         self.data = pd.DataFrame()
@@ -100,8 +104,8 @@ class MomentumStrategy:
 
         df["recent_vol"] = rolling_annualized_vol(
             df["log_return"],
-            window="30D",
-            min_periods=5,
+            window=self.vol_window,
+            min_periods=self.vol_window,
         )
 
         df["position"] = df["signal"] * (self.target_vol / df["recent_vol"])
@@ -112,6 +116,7 @@ class MomentumStrategy:
     def _evaluate_single_ticker(self, close, ticker_name):
         df = self._build_single_ticker_frame(close)
         performance_data, summary = calculate_performance(
+            init_amount=self.init_amount,
             returns=df["log_return"],
             positions=df["position"],
             fees=self.fees,
@@ -142,7 +147,7 @@ class MomentumStrategy:
                     "wealth",
                     "cum_fees",
                     "running_peak",
-                    "drawdown",
+                    "drawdown%",
                 ]
             ]
         )
@@ -167,6 +172,7 @@ class MomentumStrategy:
         portfolio_fees = ticker_fee_costs.mean(axis=1)
 
         portfolio_data, summary = summarize_returns(
+            init_amount=self.init_amount,
             strategy_returns=portfolio_returns,
             fee_cost=portfolio_fees,
             summary_meta={
@@ -190,7 +196,7 @@ class MomentumStrategy:
         portfolio_frame["cum_fees"] = portfolio_data["cum_fees"]
         portfolio_frame["wealth"] = portfolio_data["wealth"]
         portfolio_frame["running_peak"] = portfolio_data["running_peak"]
-        portfolio_frame["drawdown"] = portfolio_data["drawdown"]
+        portfolio_frame["drawdown%"] = portfolio_data["drawdown%"]
         portfolio_frame["active_tickers"] = (ticker_net_returns != 0).sum(axis=1)
 
         ticker_frames["portfolio"] = portfolio_frame
@@ -278,14 +284,3 @@ class MomentumStrategy:
             title=f"{self.ticker_label} Momentum Strategy Monte Carlo Wealth",
             log_scale=True,
         )
-
-# Example usage:
-# python -c "from momentum import MomentumStrategy; print('import ok')"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); print(s.summary)"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='BTC-USD', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); print(s.summary)"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['AAPL', 'MSFT', 'GOOG'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); print(s.summary)"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['AAPL', 'MSFT', 'GOOG'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['AAPL', 'MSFT', 'GOOG'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); s.monte_carlo_summary.to_csv('monte_carlo_summary.csv', index=False); print('saved monte_carlo_summary.csv')"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['AAPL', 'MSFT', 'GOOG'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); s.plot_wealth()"
-# python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['AAPL', 'MSFT', 'GOOG'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); s.plot_monte_carlo()"

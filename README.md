@@ -12,8 +12,8 @@ Current files:
 The current strategy is a moving-average momentum strategy with target-volatility scaling.
 
 It works for:
-- one single ticker such as `SPY`
-- several tickers such as `['SPY', 'QQQ', 'IWM']`
+- one single ticker
+- several tickers
 
 When several tickers are used:
 - the same parameters are applied to every ticker
@@ -56,7 +56,7 @@ Main functions:
   Estimates the natural annualization frequency from timestamp spacing.
 
 - `rolling_annualized_vol(log_returns, window, min_periods)`
-  Computes annualized rolling volatility on a time window such as `365D` or `30D`.
+  Computes annualized rolling volatility on a rolling time window.
 
 - `calculate_performance(returns, positions, fees, log_return)`
   Takes an asset return series plus a position series and computes:
@@ -180,7 +180,7 @@ Instead of using the one realized close path, it:
 
 This part is important when several tickers are used.
 
-For a basket such as `['SPY', 'QQQ', 'IWM']`:
+For a basket of several tickers:
 - each ticker gets its own resampled synthetic return path
 - one Monte Carlo path means one synthetic path for every ticker in the basket
 - the strategy is rerun on the full basket path
@@ -223,53 +223,22 @@ python -m pip install -r requirements.txt
 
 ## How To Run
 
-Check imports:
+Typical workflow:
 
-```bash
-python -c "from momentum import MomentumStrategy; from utils import fetch_data, calculate_performance, log_return; print('imports ok')"
-```
+1. Import `MomentumStrategy`.
+2. Instantiate it by explicitly passing all required parameters.
+3. Call `run()` for the historical backtest or `run_monte_carlo(...)` for the Monte Carlo analysis.
+4. Read the output from:
+   - `s.summary`
+   - `s.data`
+   - `s.monte_carlo_summary`
+   - `s.monte_carlo_path_summaries`
+   - `s.monte_carlo_wealth`
+5. Export any dataframe with pandas if needed, for example with `.to_csv(...)`.
+6. Use `plot_wealth()` or `plot_monte_carlo()` for the visual outputs.
 
-Run the real backtest on one ticker:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); print(s.summary)"
-```
-
-Run the real backtest on several tickers:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); print(s.summary)"
-```
-
-Run the Monte Carlo summary on one ticker:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
-```
-
-Run the Monte Carlo summary on several tickers:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
-```
-
-Save the Monte Carlo summary to CSV:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); s.monte_carlo_summary.to_csv('monte_carlo_summary.csv', index=False); print('saved monte_carlo_summary.csv')"
-```
-
-Plot the real total wealth:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); s.plot_wealth()"
-```
-
-Plot the Monte Carlo total wealth spread:
-
-```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); s.plot_monte_carlo()"
-```
+The README intentionally does not prescribe specific parameter values.
+The class interface is explicit, so the user chooses every setting directly when creating the strategy object.
 
 ## Data Structure Note
 
@@ -282,7 +251,7 @@ When you use several tickers:
 - there is also a `portfolio` block containing the total equal-weight portfolio metrics
 
 So for example:
-- `s.data['SPY']` gives the SPY sleeve details
+- `s.data['TICKER_NAME']` gives one ticker sleeve details
 - `s.data['portfolio']` gives the total portfolio wealth, drawdown, fees, and returns
 
 ## Future Strategies

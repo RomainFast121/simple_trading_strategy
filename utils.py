@@ -21,11 +21,15 @@ def fetch_data(ticker, start, end, interval="1d", auto_adjust=True, progress=Fal
     if data.empty:
         raise ValueError(f"No Yahoo Finance data returned for {ticker}.")
 
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns = data.columns.get_level_values(0)
-
-    data = data.rename(columns=str.lower)
     data.index = pd.to_datetime(data.index)
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = pd.MultiIndex.from_tuples(
+            [(str(level_0).lower(), str(level_1)) for level_0, level_1 in data.columns]
+        )
+    else:
+        data = data.rename(columns=str.lower)
+
     return data
 
 
@@ -76,6 +80,66 @@ def rolling_annualized_vol(log_returns, window, min_periods):
     return rolling_std * np.sqrt(periods_per_year)
 
 
+# Turn a net strategy return stream into wealth, drawdown, and summary metrics.
+def summarize_returns(strategy_returns, fee_cost=None, summary_meta=None, active_mask=None):
+    strategy_returns = pd.Series(strategy_returns, copy=False).astype(float)
+    strategy_returns.index = pd.to_datetime(strategy_returns.index)
+
+    periods_per_year = estimate_periods_per_year(strategy_returns.index)
+    if not np.isfinite(periods_per_year):
+        raise ValueError("Not enough data points to estimate annualization.")
+
+    summary_data = pd.DataFrame(index=strategy_returns.index)
+    summary_data["net_strategy_return"] = strategy_returns.fillna(0.0).clip(lower=-0.999999)
+    summary_data["net_log_return"] = np.log1p(summary_data["net_strategy_return"])
+
+    if fee_cost is None:
+        summary_data["fee_cost"] = 0.0
+    else:
+        fee_series = pd.Series(fee_cost, copy=False).reindex(summary_data.index).fillna(0.0)
+        summary_data["fee_cost"] = fee_series.astype(float)
+
+    summary_data["wealth"] = np.exp(summary_data["net_log_return"].cumsum())
+    summary_data["cum_fees"] = summary_data["fee_cost"].cumsum()
+    summary_data["running_peak"] = summary_data["wealth"].cummax()
+    summary_data["drawdown"] = (summary_data["wealth"] / summary_data["running_peak"]) - 1.0
+
+    if active_mask is None:
+        active_mask = summary_data["net_strategy_return"] != 0
+    else:
+        active_mask = pd.Series(active_mask, copy=False).reindex(summary_data.index).fillna(False)
+
+    active_returns = summary_data.loc[active_mask, "net_strategy_return"].dropna()
+    active_log_returns = summary_data.loc[active_mask, "net_log_return"].dropna()
+    all_returns = summary_data["net_strategy_return"]
+
+    win_rate = (active_returns > 0).mean() if not active_returns.empty else np.nan
+    average_return_factor = (
+        np.exp(active_log_returns.mean()) if not active_log_returns.empty else np.nan
+    )
+
+    ret_std = all_returns.std(ddof=1)
+    sharpe = (
+        (all_returns.mean() / ret_std) * np.sqrt(periods_per_year)
+        if pd.notna(ret_std) and ret_std > 0
+        else np.nan
+    )
+
+    summary_values = dict(summary_meta or {})
+    summary_values.update(
+        {
+            "total_pnl": summary_data["wealth"].iloc[-1] - 1 if not summary_data.empty else np.nan,
+            "total_fees": summary_data["fee_cost"].sum(),
+            "max_drawdown": summary_data["drawdown"].min() if not summary_data.empty else np.nan,
+            "winrate": win_rate,
+            "average_return_factor": average_return_factor,
+            "sharpe_ratio_annualized": sharpe,
+        }
+    )
+
+    return summary_data, pd.DataFrame([summary_values])
+
+
 # Turn asset returns and positions into a full performance dataframe and summary metrics.
 def calculate_performance(returns, positions, fees=0.0, log_return=False, summary_meta=None):
     returns = pd.Series(returns, copy=False)
@@ -83,10 +147,6 @@ def calculate_performance(returns, positions, fees=0.0, log_return=False, summar
 
     data = pd.concat([returns.rename("input_return"), positions.rename("position")], axis=1)
     data.index = pd.to_datetime(data.index)
-
-    periods_per_year = estimate_periods_per_year(data.index)
-    if not np.isfinite(periods_per_year):
-        raise ValueError("Not enough data points to estimate annualization.")
 
     if log_return:
         data["asset_log_return"] = data["input_return"].astype(float)
@@ -103,46 +163,17 @@ def calculate_performance(returns, positions, fees=0.0, log_return=False, summar
     data["turnover"] = (data["position"].fillna(0.0) - data["position_prev"]).abs()
     data["fee_cost"] = data["turnover"] * fees
     data["net_strategy_return"] = data["gross_strategy_return"] - data["fee_cost"]
-    data["net_strategy_return"] = data["net_strategy_return"].clip(lower=-0.999999)
-    data["net_log_return"] = np.log1p(data["net_strategy_return"])
-    data["wealth"] = np.exp(data["net_log_return"].fillna(0.0).cumsum())
-    data["cum_fees"] = data["fee_cost"].fillna(0.0).cumsum()
-    data["running_peak"] = data["wealth"].cummax()
-    data["drawdown"] = (data["wealth"] / data["running_peak"]) - 1.0
 
-    active_mask = data["position_prev"] != 0
-    active_returns = data.loc[active_mask, "net_strategy_return"].dropna()
-    active_log_returns = data.loc[active_mask, "net_log_return"].dropna()
-    all_returns = data["net_strategy_return"].fillna(0.0)
-
-    win_rate = (active_returns > 0).mean() if not active_returns.empty else np.nan
-    average_return_factor = (
-        np.exp(active_log_returns.mean()) if not active_log_returns.empty else np.nan
+    summary_data, summary = summarize_returns(
+        strategy_returns=data["net_strategy_return"],
+        fee_cost=data["fee_cost"],
+        summary_meta=summary_meta,
+        active_mask=data["position_prev"] != 0,
     )
 
-    if all_returns.empty:
-        sharpe = np.nan
-    else:
-        ret_std = all_returns.std(ddof=1)
-        sharpe = (
-            (all_returns.mean() / ret_std) * np.sqrt(periods_per_year)
-            if pd.notna(ret_std) and ret_std > 0
-            else np.nan
-        )
-
-    summary_values = dict(summary_meta or {})
-    summary_values.update(
-        {
-            "total_pnl": data["wealth"].iloc[-1] - 1 if not data.empty else np.nan,
-            "total_fees": data["fee_cost"].sum(),
-            "max_drawdown": data["drawdown"].min() if not data.empty else np.nan,
-            "winrate": win_rate,
-            "average_return_factor": average_return_factor,
-            "sharpe_ratio_annualized": sharpe,
-        }
-    )
-
-    return data, pd.DataFrame([summary_values])
+    for column in ["net_log_return", "wealth", "cum_fees", "running_peak", "drawdown"]:
+        data[column] = summary_data[column]
+    return data, summary
 
 
 # Plot a single wealth curve in a seaborn-style chart.
@@ -165,28 +196,38 @@ def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
     return fig, ax
 
 
-# Bootstrap historical simple returns to generate synthetic close paths.
+# Bootstrap historical simple returns to generate synthetic close paths for one or many tickers.
 def generate_monte_carlo_paths(close, n_paths=250, seed=None):
-    close = pd.Series(close, copy=False).astype(float).dropna()
-    simple_returns = close.pct_change().dropna()
-
-    if simple_returns.empty:
-        raise ValueError("Not enough price history to generate Monte Carlo paths.")
-
     rng = np.random.default_rng(seed)
-    sampled_returns = rng.choice(
-        simple_returns.to_numpy(),
-        size=(len(simple_returns), n_paths),
-        replace=True,
-    )
 
-    compounded_paths = np.vstack(
-        [np.ones(n_paths), np.cumprod(1.0 + sampled_returns, axis=0)]
-    )
-    simulated_close = close.iloc[0] * compounded_paths
+    if isinstance(close, pd.Series):
+        close = pd.Series(close, copy=False).astype(float).dropna()
+        simple_returns = close.pct_change().dropna()
 
-    columns = [f"path_{path_id:04d}" for path_id in range(1, n_paths + 1)]
-    return pd.DataFrame(simulated_close, index=close.index, columns=columns)
+        if simple_returns.empty:
+            raise ValueError("Not enough price history to generate Monte Carlo paths.")
+
+        sampled_returns = rng.choice(
+            simple_returns.to_numpy(),
+            size=(len(simple_returns), n_paths),
+            replace=True,
+        )
+        compounded_paths = np.vstack(
+            [np.ones(n_paths), np.cumprod(1.0 + sampled_returns, axis=0)]
+        )
+        simulated_close = close.iloc[0] * compounded_paths
+        columns = [f"path_{path_id:04d}" for path_id in range(1, n_paths + 1)]
+        return pd.DataFrame(simulated_close, index=close.index, columns=columns)
+
+    close = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
+    path_frames = {}
+
+    for ticker in close.columns:
+        ticker_close = close[ticker].dropna()
+        ticker_paths = generate_monte_carlo_paths(ticker_close, n_paths=n_paths, seed=rng.integers(0, 10**9))
+        path_frames[ticker] = ticker_paths.reindex(close.index)
+
+    return pd.concat(path_frames, axis=1)
 
 
 # Aggregate Monte Carlo path metrics and attach a confidence interval for the mean estimate.
@@ -235,18 +276,26 @@ def calculate_monte_carlo_performance(
     summary_meta=None,
 ):
     simulated_paths = generate_monte_carlo_paths(close, n_paths=n_paths, seed=seed)
-
     path_summaries = []
     wealth_paths = {}
 
-    for path_name in simulated_paths.columns:
-        path_close = simulated_paths[path_name]
-        path_data, path_summary = evaluator(path_close)
-
-        summary_row = path_summary.iloc[0].to_dict()
-        summary_row["path"] = path_name
-        path_summaries.append(summary_row)
-        wealth_paths[path_name] = path_data["wealth"]
+    if isinstance(simulated_paths.columns, pd.MultiIndex):
+        path_names = simulated_paths.columns.get_level_values(1).unique()
+        for path_name in path_names:
+            path_close = simulated_paths.xs(path_name, axis=1, level=1)
+            path_data, path_summary = evaluator(path_close)
+            summary_row = path_summary.iloc[0].to_dict()
+            summary_row["path"] = path_name
+            path_summaries.append(summary_row)
+            wealth_paths[path_name] = path_data["portfolio"]["wealth"]
+    else:
+        for path_name in simulated_paths.columns:
+            path_close = simulated_paths[path_name]
+            path_data, path_summary = evaluator(path_close)
+            summary_row = path_summary.iloc[0].to_dict()
+            summary_row["path"] = path_name
+            path_summaries.append(summary_row)
+            wealth_paths[path_name] = path_data["wealth"]
 
     path_summaries = pd.DataFrame(path_summaries)
     wealth_paths = pd.DataFrame(wealth_paths, index=simulated_paths.index)
@@ -280,7 +329,13 @@ def plot_monte_carlo_wealth(wealth_paths, title="Monte Carlo Wealth", log_scale=
     fig, ax = plt.subplots(figsize=(12, 6))
 
     for column in wealth_paths.columns:
-        ax.plot(wealth_paths.index, wealth_paths[column], color="steelblue", alpha=0.05, linewidth=0.8)
+        ax.plot(
+            wealth_paths.index,
+            wealth_paths[column],
+            color="steelblue",
+            alpha=0.05,
+            linewidth=0.8,
+        )
 
     ax.fill_between(
         wealth_paths.index,

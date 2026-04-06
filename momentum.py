@@ -15,15 +15,7 @@ from utils import (
 class MomentumStrategy:
     # Initialize the strategy inputs and prepare placeholders for raw data and results.
     def __init__(
-        self,
-        ticker,
-        start,
-        end,
-        bias=False,
-        tf="1d",
-        MA=20,
-        fees=0.005,
-        leverage=1.0,
+        self,ticker,start,end,bias=False,tf="1d",MA=20,fees=0.005,leverage=1.0,   
     ):
         self.ticker = ticker
         self.start = start
@@ -45,12 +37,7 @@ class MomentumStrategy:
     # Download and store the raw Yahoo Finance data used by the strategy.
     def fetch_data(self):
         self.raw_data = fetch_data(
-            ticker=self.ticker,
-            start=self.start,
-            end=self.end,
-            interval=self.tf,
-            auto_adjust=True,
-            progress=False,
+            ticker=self.ticker,start=self.start,end=self.end,interval=self.tf,auto_adjust=True,progress=False,
         )
         return self.raw_data
 
@@ -194,15 +181,7 @@ class MomentumStrategy:
         )
 
 
-# Quick start:
-# 1. Create and activate a local environment.
-# 2. Install the libraries from requirements.txt.
-# 3. Run the real backtest summary command below.
-# 4. Run the Monte Carlo summary command below if you want average path statistics and 95% confidence intervals.
-# 5. Run one of the plotting commands below if you want to export a chart.
-#
 # Example usage:
-# source .venv/bin/activate
 # python -c "from momentum import MomentumStrategy; print('import ok')"
 # python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, leverage=1.0); s.run(); print(s.summary)"
 # python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, leverage=1.0); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"

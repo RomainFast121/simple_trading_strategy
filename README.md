@@ -31,7 +31,12 @@ The `MomentumStrategy` class takes:
 - `tf`: Yahoo Finance interval such as `1d`
 - `MA`: moving average window length
 - `fees`: transaction cost per unit of turnover
-- `target_vol`: target annualized volatility for the position sizing, for example `0.10` for 10%
+- `target_vol`: target annualized volatility for the position sizing
+- `vol_window`: rolling window used for the recent volatility estimate
+- `init_amount`: starting wealth used for the wealth curve
+
+The constructor is intentionally explicit now.
+There are no strategy defaults in the class signature for these tuning inputs, so each run has to state its choices directly.
 
 ## File Structure
 
@@ -64,7 +69,7 @@ Main functions:
   - drawdown
   - summary metrics
 
-- `summarize_returns(strategy_returns, fee_cost, ...)`
+- `summarize_returns(init_amount, strategy_returns, fee_cost, ...)`
   Turns a net strategy return stream into wealth, drawdown, and summary metrics.
   This is especially useful when combining several ticker sleeves into one total portfolio return stream.
 
@@ -132,7 +137,7 @@ For each ticker, the momentum strategy works in this order:
    - if `close > moving average`, signal = `+1`
    - otherwise, signal = `-1`
 5. If `bias=True`, replace `-1` by `0`.
-6. Compute recent annualized volatility over the last `30D`.
+6. Compute recent annualized volatility over the chosen rolling window.
 7. Compute the raw position:
    `signal * target_vol / recent_vol`
 8. This means the strategy tries to scale each sleeve so its annualized volatility is closer to the chosen target.
@@ -227,43 +232,43 @@ python -c "from momentum import MomentumStrategy; from utils import fetch_data, 
 Run the real backtest on one ticker:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); print(s.summary)"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); print(s.summary)"
 ```
 
 Run the real backtest on several tickers:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); print(s.summary)"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); print(s.summary)"
 ```
 
 Run the Monte Carlo summary on one ticker:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker='SPY', start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
 ```
 
 Run the Monte Carlo summary on several tickers:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); print(s.monte_carlo_summary)"
 ```
 
 Save the Monte Carlo summary to CSV:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); s.monte_carlo_summary.to_csv('monte_carlo_summary.csv', index=False); print('saved monte_carlo_summary.csv')"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); s.monte_carlo_summary.to_csv('monte_carlo_summary.csv', index=False); print('saved monte_carlo_summary.csv')"
 ```
 
 Plot the real total wealth:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run(); s.plot_wealth()"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run(); s.plot_wealth()"
 ```
 
 Plot the Monte Carlo total wealth spread:
 
 ```bash
-python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10); s.run_monte_carlo(n_paths=250, seed=42); s.plot_monte_carlo()"
+python -c "from momentum import MomentumStrategy; s = MomentumStrategy(ticker=['SPY', 'QQQ', 'IWM'], start='2020-01-01', end='2025-01-01', bias=True, tf='1d', MA=200, fees=0.0005, target_vol=0.10, vol_window=30, init_amount=1000); s.run_monte_carlo(n_paths=250, seed=42); s.plot_monte_carlo()"
 ```
 
 ## Data Structure Note

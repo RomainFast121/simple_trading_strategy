@@ -20,13 +20,13 @@ class MomentumStrategy:
         ticker,
         start,
         end,
-        bias=False,
-        tf="1d",
-        MA=20,
-        fees=0.005,
-        target_vol=0.10,
-        vol_window=30,
-        init_amount=1000
+        bias,
+        tf,
+        MA,
+        fees,
+        target_vol,
+        vol_window,
+        init_amount,
     ):
         self.ticker = ticker
         self.tickers = [ticker] if isinstance(ticker, str) else list(ticker)

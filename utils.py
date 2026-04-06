@@ -80,7 +80,7 @@ def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta
         raise ValueError("Not enough data points to estimate annualization.")
 
     summary_data = pd.DataFrame(index=strategy_returns.index)
-    summary_data["net_strategy_return"] = strategy_returns.fillna(0.0)
+    summary_data["net_strategy_return"] = strategy_returns.fillna(0.0).clip(lower=-0.999999)
     summary_data["net_log_return"] = np.log1p(summary_data["net_strategy_return"])
 
     if fee_cost is None:
@@ -118,7 +118,11 @@ def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta
     summary_values = dict(summary_meta or {})
     summary_values.update(
         {
-            "total_pnl": summary_data["wealth"].iloc[-1] - 1 if not summary_data.empty else np.nan,
+            "total_pnl": (
+                (summary_data["wealth"].iloc[-1] / init_amount) - 1
+                if not summary_data.empty
+                else np.nan
+            ),
             "total_fees": summary_data["fee_cost"].sum(),
             "max_drawdown": summary_data["drawdown%"].min() if not summary_data.empty else np.nan,
             "winrate": win_rate,
@@ -143,7 +147,7 @@ def calculate_performance(init_amount, returns, positions, fees=0.0005, log_retu
         data["asset_simple_return"] = np.expm1(data["asset_log_return"])
     else:
         data["asset_simple_return"] = data["input_return"].astype(float)
-        clipped_simple_return = data["asset_simple_return"]
+        clipped_simple_return = data["asset_simple_return"].clip(lower=-0.999999)
         data["asset_log_return"] = np.log1p(clipped_simple_return)
 
     data["position_prev"] = data["position"].shift(1).fillna(0.0)

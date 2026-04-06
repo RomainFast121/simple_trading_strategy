@@ -62,21 +62,11 @@ def estimate_periods_per_year(index):
 
 # Compute annualized rolling volatility on a time-based window.
 def rolling_annualized_vol(log_returns, window, min_periods):
+    periods_per_year = estimate_periods_per_year(log_returns.index)
+    if not np.isfinite(periods_per_year):
+        raise ValueError("Not enough data points to estimate annualization.")
+
     rolling_std = log_returns.rolling(window=window, min_periods=min_periods).std()
-    rolling_count = log_returns.rolling(window=window, min_periods=min_periods).count()
-
-    timestamp_seconds = pd.Series(
-        log_returns.index.view("int64") / 1_000_000_000,
-        index=log_returns.index,
-    )
-    rolling_start_seconds = timestamp_seconds.rolling(
-        window=window, min_periods=min_periods
-    ).min()
-    elapsed_days = ((timestamp_seconds - rolling_start_seconds) / (24 * 60 * 60)).clip(
-        lower=1 / 24
-    )
-
-    periods_per_year = rolling_count / (elapsed_days / 365.25)
     return rolling_std * np.sqrt(periods_per_year)
 
 

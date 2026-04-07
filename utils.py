@@ -1,4 +1,6 @@
 from statistics import NormalDist
+from datetime import timedelta, timezone
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,13 +9,75 @@ import seaborn as sns
 import yfinance as yf
 
 
+# Parse a timezone label such as UTC, UTC+1, UTC-05:00, or an IANA zone name.
+def parse_timezone(timezone_label):
+    if timezone_label is None:
+        return timezone.utc
+
+    if not isinstance(timezone_label, str):
+        raise ValueError("timezone_label must be a string such as 'UTC' or 'UTC+1'.")
+
+    label = timezone_label.strip()
+    if label.upper() == "UTC":
+        return timezone.utc
+
+    match = re.fullmatch(r"UTC([+-])(\d{1,2})(?::?(\d{2}))?", label.upper())
+    if match:
+        sign = 1 if match.group(1) == "+" else -1
+        hours = int(match.group(2))
+        minutes = int(match.group(3) or 0)
+        offset = timedelta(hours=hours, minutes=minutes) * sign
+        return timezone(offset)
+
+    return label
+
+
+# Select one hourly bar per local day, using the bar that starts at the chosen hour.
+def build_daily_snapshot_from_hourly(data, hour=0, hour_timezone="UTC"):
+    if data.empty:
+        raise ValueError("No hourly data available to build daily snapshots.")
+
+    parsed_timezone = parse_timezone(hour_timezone)
+    intraday = data.copy()
+    intraday.index = pd.to_datetime(intraday.index)
+
+    if intraday.index.tz is None:
+        intraday.index = intraday.index.tz_localize("UTC")
+
+    local_index = intraday.index.tz_convert(parsed_timezone)
+    intraday.index = local_index
+
+    selected = intraday[local_index.hour == hour].copy()
+    if selected.empty:
+        raise ValueError(
+            f"No hourly bars found at hour {hour} in timezone {hour_timezone}."
+        )
+
+    selected["local_date"] = selected.index.normalize()
+    selected = selected.groupby("local_date", sort=True, group_keys=False).tail(1)
+    selected = selected.drop(columns="local_date")
+    selected.index.name = None
+    return selected.sort_index()
+
+
 # Download raw market data from Yahoo Finance and normalize the output columns.
-def fetch_data(ticker, start, end, interval="1d", auto_adjust=True, progress=False):
+def fetch_data(
+    ticker,
+    start,
+    end,
+    interval="1d",
+    auto_adjust=True,
+    progress=False,
+    hour=None,
+    hour_timezone="UTC",
+):
+    use_hourly_snapshot = interval == "1d" and hour is not None
+    yahoo_interval = "1h" if use_hourly_snapshot else interval
     data = yf.download(
         ticker,
         start=start,
         end=end,
-        interval=interval,
+        interval=yahoo_interval,
         auto_adjust=auto_adjust,
         progress=progress,
     )
@@ -22,6 +86,8 @@ def fetch_data(ticker, start, end, interval="1d", auto_adjust=True, progress=Fal
         raise ValueError(f"No Yahoo Finance data returned for {ticker}.")
 
     data.index = pd.to_datetime(data.index)
+    if use_hourly_snapshot:
+        data = build_daily_snapshot_from_hourly(data, hour=hour, hour_timezone=hour_timezone)
 
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = pd.MultiIndex.from_tuples(
@@ -115,14 +181,23 @@ def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta
         else np.nan
     )
 
+    elapsed_years = (
+        (strategy_returns.index[-1] - strategy_returns.index[0]).total_seconds()
+        / (365.25 * 24 * 60 * 60)
+        if len(strategy_returns.index) >= 2
+        else np.nan
+    )
+    final_wealth = summary_data["wealth"].iloc[-1] if not summary_data.empty else np.nan
+    yearly_factor = (
+        (final_wealth / init_amount) ** (1 / elapsed_years)
+        if pd.notna(final_wealth) and pd.notna(elapsed_years) and elapsed_years > 0
+        else np.nan
+    )
+
     summary_values = dict(summary_meta or {})
     summary_values.update(
         {
-            "total_pnl": (
-                (summary_data["wealth"].iloc[-1] / init_amount) - 1
-                if not summary_data.empty
-                else np.nan
-            ),
+            "yearly_factor": yearly_factor,
             "total_fees": summary_data["fee_cost"].sum(),
             "max_drawdown": summary_data["drawdown%"].min() if not summary_data.empty else np.nan,
             "winrate": win_rate,

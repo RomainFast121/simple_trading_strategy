@@ -27,6 +27,8 @@ class MomentumStrategy:
         target_vol,
         vol_window,
         init_amount,
+        hour=None,
+        hour_timezone="UTC",
     ):
         self.ticker = ticker
         self.tickers = [ticker] if isinstance(ticker, str) else list(ticker)
@@ -40,6 +42,8 @@ class MomentumStrategy:
         self.target_vol = target_vol
         self.vol_window = vol_window
         self.init_amount = init_amount
+        self.hour = hour
+        self.hour_timezone = hour_timezone
 
         self.raw_data = pd.DataFrame()
         self.data = pd.DataFrame()
@@ -59,6 +63,8 @@ class MomentumStrategy:
             interval=self.tf,
             auto_adjust=True,
             progress=False,
+            hour=self.hour,
+            hour_timezone=self.hour_timezone,
         )
         return self.raw_data
 
@@ -130,6 +136,8 @@ class MomentumStrategy:
                 "ma": self.ma,
                 "fees": self.fees,
                 "target_vol": self.target_vol,
+                "hour": self.hour,
+                "hour_timezone": self.hour_timezone,
             },
         )
 
@@ -184,6 +192,8 @@ class MomentumStrategy:
                 "ma": self.ma,
                 "fees": self.fees,
                 "target_vol": self.target_vol,
+                "hour": self.hour,
+                "hour_timezone": self.hour_timezone,
             },
             active_mask=portfolio_returns != 0,
         )
@@ -234,7 +244,7 @@ class MomentumStrategy:
             close=close_input,
             evaluator=self._evaluate_close_series,
             metric_columns=[
-                "total_pnl",
+                "yearly_factor",
                 "total_fees",
                 "max_drawdown",
                 "winrate",
@@ -253,6 +263,8 @@ class MomentumStrategy:
                 "ma": self.ma,
                 "fees": self.fees,
                 "target_vol": self.target_vol,
+                "hour": self.hour,
+                "hour_timezone": self.hour_timezone,
             },
         )
 

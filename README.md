@@ -34,6 +34,8 @@ The `MomentumStrategy` class takes:
 - `target_vol`: target annualized volatility for the position sizing
 - `vol_window`: rolling window used for the recent volatility estimate
 - `init_amount`: starting wealth used for the wealth curve
+- `hour`: optional hour used only when you want a daily series built from hourly bars
+- `hour_timezone`: timezone used for that hour selection, for example `UTC`, `UTC+1`, or an IANA timezone name; defaults to `UTC`
 
 The constructor is intentionally explicit now.
 There are no strategy defaults in the class signature for these tuning inputs, so each run has to state its choices directly.
@@ -48,6 +50,11 @@ Main functions:
 
 - `fetch_data(...)`
   Downloads raw Yahoo Finance data and normalizes the columns for one ticker or several tickers.
+  If `tf='1d'` and no hour is provided, it uses Yahoo daily bars.
+  If `tf='1d'` and an hour is provided, it builds a daily series from hourly bars using the bar that starts at the chosen hour in the chosen timezone.
+
+- `build_daily_snapshot_from_hourly(data, hour, hour_timezone)`
+  Selects one hourly bar per local day, using the bar that starts at the chosen hour.
 
 - `log_return(close)`
   Converts a close price series into log returns.
@@ -97,6 +104,8 @@ Main methods:
 
 - `fetch_data()`
   Downloads and stores the raw market data.
+  If `tf='1d'` and no hour is provided, it uses Yahoo daily data.
+  If `tf='1d'` and an hour is provided, it builds the daily observation series from hourly market bars through the constructor settings.
 
 - `_build_single_ticker_frame(close)`
   Builds the momentum-specific columns for one ticker:
@@ -145,6 +154,33 @@ For each ticker, the momentum strategy works in this order:
 10. Deduct fees from turnover.
 11. Compound net returns into the wealth curve.
 
+## Daily Data Timing
+
+This point is important.
+
+When `tf='1d'` and no `hour` is provided:
+- the strategy uses Yahoo daily bars
+- this is daily bar data from Yahoo
+
+When `tf='1d'` and an `hour` is provided:
+- the strategy fetches hourly bars
+- it selects the bar that starts at the chosen `hour` in the chosen `hour_timezone`
+- that selected hourly bar becomes the daily observation used by the strategy
+
+So in practice:
+- if `hour=15`, the strategy uses the hourly bar from `15:00` to `16:00`
+- the signal is built from the values of that bar
+- because the position is shifted by one bar, the strategy can only trade based on that signal from the next bar onward
+
+So a `15:00` selection means:
+- the `15:00 -> 16:00` bar is the information bar
+- the strategy is not allowed to trade on that same bar
+- the earliest tradeable moment is from the following selected bar onward
+
+So `tf='1d'` can behave in two ways:
+- standard daily mode if no hour is given
+- one-observation-per-day hourly-snapshot mode if an hour is given
+
 If several tickers are used:
 
 1. The exact same logic is run independently for each ticker.
@@ -156,7 +192,7 @@ If several tickers are used:
 
 The summary includes:
 
-- `total_pnl`: final compounded wealth minus one
+- `yearly_factor`: geometric annual return factor implied by the full compounded wealth path
 - `total_fees`: total fee cost paid by the strategy
 - `max_drawdown`: worst peak-to-trough decline of the wealth curve
 - `winrate`: share of profitable active periods
@@ -164,6 +200,10 @@ The summary includes:
 - `sharpe_ratio_annualized`: annualized Sharpe based on normal net returns, with flat periods counted as zero return
 
 For a basket of tickers, these metrics are computed from the total equal-weight portfolio wealth and return stream, not by averaging each ticker summary row separately.
+
+Interpretation of `yearly_factor`:
+- if `yearly_factor = 1.10`, that means an average annual growth factor of 10%
+- over `N` years, `init_amount * yearly_factor ** N` gives the ending wealth implied by that average geometric annual rate
 
 ## Monte Carlo Analysis
 
@@ -197,8 +237,8 @@ The Monte Carlo summary returns the same style of metrics as the standard backte
 This matters because the average from Monte Carlo depends on how many paths are generated.
 
 For example:
-- `total_pnl` is the average total P&L across the simulated paths
-- `total_pnl_ci_lower` and `total_pnl_ci_upper` give a 95% confidence interval for that average estimate
+- `yearly_factor` is the average annual return factor across the simulated paths
+- `yearly_factor_ci_lower` and `yearly_factor_ci_upper` give a 95% confidence interval for that average estimate
 
 The Monte Carlo wealth plot shows:
 - every individual simulated wealth path in the background

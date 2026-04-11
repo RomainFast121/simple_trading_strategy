@@ -91,7 +91,7 @@ Main functions:
   Merges already-built sleeves on the union of timestamps and creates the total portfolio path.
 
 - `generate_monte_carlo_paths(...)`
-  Builds synthetic close paths by bootstrap-resampling historical simple returns.
+  Builds synthetic close paths by resampling contiguous blocks of historical simple returns.
 
 - `calculate_monte_carlo_performance(...)`
   Re-runs the evaluator on each synthetic path and aggregates the results.
@@ -131,7 +131,7 @@ Main methods:
   Runs the historical backtest using the strategy parameters passed to that call.
 
 - `run_monte_carlo(...)`
-  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call.
+  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional block length for the bootstrap.
 
 - `plot_wealth()`
   Plots the real wealth curve.
@@ -262,8 +262,8 @@ Interpretation of `yearly_factor`:
 The Monte Carlo module does not use the single realized path directly.
 
 Instead it:
-- takes the historical simple return distribution
-- resamples returns with replacement
+- takes the historical simple return history
+- resamples contiguous return blocks
 - rebuilds synthetic close paths
 - reruns the strategy on each path
 - aggregates the resulting metrics
@@ -279,6 +279,16 @@ For a basket:
 So Monte Carlo stays aligned with the real backtest architecture:
 - sleeve first
 - merge later
+
+The bootstrap method is intentionally closer to market reality than an iid daily shuffle:
+- short local trends are preserved inside each sampled block
+- volatility clusters are preserved inside each sampled block
+- nearby observations stay together instead of being completely reordered
+
+An optional `block_length` can be passed to `run_monte_carlo(...)`:
+- smaller blocks create more randomness
+- larger blocks preserve more local regime structure
+- if `block_length` is not provided, the code chooses one automatically from the sample size
 
 ### Confidence Intervals
 

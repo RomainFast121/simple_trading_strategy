@@ -486,8 +486,44 @@ def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
     return fig, ax
 
 
-# Bootstrap historical simple returns to generate synthetic close paths for one sleeve or many sleeves.
-def generate_monte_carlo_paths(close, n_paths=250, seed=None):
+# Pick a reasonable block length when the user does not specify one.
+def infer_block_length(n_observations):
+    if n_observations <= 1:
+        return 1
+
+    return max(5, min(n_observations, int(round(np.sqrt(n_observations)))))
+
+
+# Sample one synthetic path by stitching together contiguous blocks of returns.
+def sample_block_bootstrap_returns(return_array, block_length, rng):
+    n_observations = len(return_array)
+    if n_observations == 0:
+        raise ValueError("Not enough return history to generate Monte Carlo paths.")
+
+    block_length = max(1, min(int(block_length), n_observations))
+    max_start = n_observations - block_length
+    sampled_blocks = []
+    collected = 0
+
+    while collected < n_observations:
+        start = rng.integers(0, max_start + 1)
+        block = return_array[start : start + block_length]
+        sampled_blocks.append(block)
+        collected += len(block)
+
+    return np.concatenate(sampled_blocks)[:n_observations]
+
+
+# Convert sampled simple returns back into simulated close paths.
+def build_simulated_close_paths(start_price, sampled_returns, index):
+    compounded_paths = np.vstack([np.ones(sampled_returns.shape[1]), np.cumprod(1.0 + sampled_returns, axis=0)])
+    simulated_close = start_price * compounded_paths
+    columns = [f"path_{path_id:04d}" for path_id in range(1, sampled_returns.shape[1] + 1)]
+    return pd.DataFrame(simulated_close, index=index, columns=columns)
+
+
+# Bootstrap historical simple returns with contiguous time blocks so local regimes are preserved better.
+def generate_monte_carlo_paths(close, n_paths=250, seed=None, block_length=None):
     rng = np.random.default_rng(seed)
 
     if isinstance(close, pd.Series):
@@ -497,27 +533,60 @@ def generate_monte_carlo_paths(close, n_paths=250, seed=None):
         if simple_returns.empty:
             raise ValueError("Not enough price history to generate Monte Carlo paths.")
 
-        sampled_returns = rng.choice(
-            simple_returns.to_numpy(),
-            size=(len(simple_returns), n_paths),
-            replace=True,
+        block_length = infer_block_length(len(simple_returns)) if block_length is None else block_length
+        sampled_returns = np.column_stack(
+            [
+                sample_block_bootstrap_returns(simple_returns.to_numpy(), block_length, rng)
+                for _ in range(n_paths)
+            ]
         )
-        compounded_paths = np.vstack([np.ones(n_paths), np.cumprod(1.0 + sampled_returns, axis=0)])
-        simulated_close = series.iloc[0] * compounded_paths
-        columns = [f"path_{path_id:04d}" for path_id in range(1, n_paths + 1)]
-        return pd.DataFrame(simulated_close, index=series.index, columns=columns)
+        return build_simulated_close_paths(series.iloc[0], sampled_returns, series.index)
 
     if isinstance(close, dict):
-        return {
-            symbol: generate_monte_carlo_paths(series, n_paths=n_paths, seed=rng.integers(0, 10**9))
+        close_map = {
+            symbol: pd.Series(series, copy=False).astype(float).dropna()
             for symbol, series in close.items()
         }
+        native_indexes = {symbol: series.index for symbol, series in close_map.items()}
+
+        aligned_close = pd.DataFrame(index=sorted(set().union(*native_indexes.values())))
+        for symbol, series in close_map.items():
+            aligned_close[symbol] = series.reindex(aligned_close.index).ffill()
+
+        aligned_returns = aligned_close.pct_change().fillna(0.0)
+
+        if len(aligned_returns) <= 1:
+            raise ValueError("Not enough price history to generate Monte Carlo paths.")
+
+        sampled_matrix = aligned_returns.iloc[1:].to_numpy()
+        block_length = infer_block_length(len(sampled_matrix)) if block_length is None else block_length
+
+        simulated_return_paths = []
+        for _ in range(n_paths):
+            simulated_return_paths.append(
+                sample_block_bootstrap_returns(sampled_matrix, block_length, rng)
+            )
+
+        simulated_return_paths = np.stack(simulated_return_paths, axis=2)
+        simulated_paths = {}
+
+        for column_number, symbol in enumerate(aligned_close.columns):
+            symbol_returns = simulated_return_paths[:, column_number, :]
+            base_price = aligned_close[symbol].dropna().iloc[0]
+            symbol_close = build_simulated_close_paths(
+                base_price,
+                symbol_returns,
+                aligned_close.index,
+            )
+            native_index = native_indexes[symbol]
+            symbol_close = symbol_close.loc[native_index]
+            simulated_paths[symbol] = symbol_close
+
+        return simulated_paths
 
     frame = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
-    return {
-        symbol: generate_monte_carlo_paths(frame[symbol].dropna(), n_paths=n_paths, seed=rng.integers(0, 10**9))
-        for symbol in frame.columns
-    }
+    close_map = {symbol: frame[symbol].dropna() for symbol in frame.columns}
+    return generate_monte_carlo_paths(close_map, n_paths=n_paths, seed=seed, block_length=block_length)
 
 
 # Aggregate Monte Carlo path metrics and attach a confidence interval for the mean estimate.
@@ -551,8 +620,22 @@ def summarize_monte_carlo_results(path_summaries, metric_columns, confidence=0.9
 
 
 # Run a generic Monte Carlo analysis by evaluating each simulated close path with a strategy callback.
-def calculate_monte_carlo_performance(close, evaluator, metric_columns, n_paths=250, seed=None, confidence=0.95, summary_meta=None):
-    simulated_paths = generate_monte_carlo_paths(close, n_paths=n_paths, seed=seed)
+def calculate_monte_carlo_performance(
+    close,
+    evaluator,
+    metric_columns,
+    n_paths=250,
+    seed=None,
+    confidence=0.95,
+    summary_meta=None,
+    block_length=None,
+):
+    simulated_paths = generate_monte_carlo_paths(
+        close,
+        n_paths=n_paths,
+        seed=seed,
+        block_length=block_length,
+    )
     path_summaries = []
     wealth_paths = {}
 

@@ -276,6 +276,7 @@ class MomentumStrategy:
         n_paths=250,
         seed=None,
         confidence=0.95,
+        block_length=None,
         *,
         bias=None,
         MA=None,
@@ -314,6 +315,7 @@ class MomentumStrategy:
             n_paths=n_paths,
             seed=seed,
             confidence=confidence,
+            block_length=block_length,
             summary_meta={
                 "ticker": self.ticker_label,
                 "start": pd.to_datetime(self.start),

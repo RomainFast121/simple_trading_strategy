@@ -15,7 +15,7 @@ from utils import (
 
 
 class MomentumStrategy:
-    # Initialize the strategy inputs and prepare placeholders for raw data and results.
+    # Initialize the data-source inputs and prepare placeholders for fetched data and results.
     def __init__(
         self,
         ticker=None,
@@ -23,13 +23,7 @@ class MomentumStrategy:
         *,
         start,
         end,
-        bias,
         tf,
-        MA,
-        fees,
-        target_vol,
-        vol_window,
-        init_amount,
         hour=None,
         hour_timezone="UTC",
     ):
@@ -45,15 +39,16 @@ class MomentumStrategy:
         self.ticker_label = ",".join(self.symbols)
         self.start = start
         self.end = end
-        self.bias = bias
         self.tf = tf
-        self.ma = MA
-        self.fees = fees
-        self.target_vol = target_vol
-        self.vol_window = vol_window
-        self.init_amount = init_amount
         self.hour = hour
         self.hour_timezone = hour_timezone
+
+        self.bias = None
+        self.ma = None
+        self.fees = None
+        self.target_vol = None
+        self.vol_window = None
+        self.init_amount = None
 
         self.raw_data = {}
         self.data = pd.DataFrame()
@@ -62,6 +57,40 @@ class MomentumStrategy:
         self.monte_carlo_wealth = pd.DataFrame()
         self.monte_carlo_path_summaries = pd.DataFrame()
         self.monte_carlo_summary = pd.DataFrame()
+
+    # Store the strategy parameters that can be reused across repeated runs on the same fetched data.
+    def _set_strategy_params(
+        self,
+        *,
+        bias=None,
+        MA=None,
+        fees=None,
+        target_vol=None,
+        vol_window=None,
+        init_amount=None,
+    ):
+        updates = {
+            "bias": bias,
+            "ma": MA,
+            "fees": fees,
+            "target_vol": target_vol,
+            "vol_window": vol_window,
+            "init_amount": init_amount,
+        }
+
+        for attribute, value in updates.items():
+            if value is not None:
+                setattr(self, attribute, value)
+
+        missing = [
+            name
+            for name in ["bias", "ma", "fees", "target_vol", "vol_window", "init_amount"]
+            if getattr(self, name) is None
+        ]
+        if missing:
+            raise ValueError(
+                "Missing strategy parameters: " + ", ".join(missing)
+            )
 
     # Download and store one native raw dataframe per selected sleeve.
     def fetch_data(self):
@@ -216,7 +245,25 @@ class MomentumStrategy:
         return self._evaluate_multi_ticker(close_map)
 
     # Run the backtest on the real observed close prices.
-    def run(self):
+    def run(
+        self,
+        *,
+        bias=None,
+        MA=None,
+        fees=None,
+        target_vol=None,
+        vol_window=None,
+        init_amount=None,
+    ):
+        self._set_strategy_params(
+            bias=bias,
+            MA=MA,
+            fees=fees,
+            target_vol=target_vol,
+            vol_window=vol_window,
+            init_amount=init_amount,
+        )
+
         if not self.raw_data:
             self.fetch_data()
 
@@ -224,7 +271,28 @@ class MomentumStrategy:
         return self.data
 
     # Run a bootstrap Monte Carlo on historical returns and summarize average metrics with confidence intervals.
-    def run_monte_carlo(self, n_paths=250, seed=None, confidence=0.95):
+    def run_monte_carlo(
+        self,
+        n_paths=250,
+        seed=None,
+        confidence=0.95,
+        *,
+        bias=None,
+        MA=None,
+        fees=None,
+        target_vol=None,
+        vol_window=None,
+        init_amount=None,
+    ):
+        self._set_strategy_params(
+            bias=bias,
+            MA=MA,
+            fees=fees,
+            target_vol=target_vol,
+            vol_window=vol_window,
+            init_amount=init_amount,
+        )
+
         if not self.raw_data:
             self.fetch_data()
 

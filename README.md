@@ -22,27 +22,33 @@ At least one of `ticker` or `crypto` must be provided. If both are empty, the cl
 
 ### Inputs
 
-The `MomentumStrategy` class takes:
+The `MomentumStrategy` constructor takes the data-loading inputs:
 
 - `ticker`: one Yahoo ticker or a list of Yahoo tickers
 - `crypto`: one Binance symbol or a list of Binance symbols
 - `start`: start date for the data
 - `end`: end date for the data
-- `bias`: if `False`, the signal is `+1 / -1`; if `True`, short signals become `0`
 - `tf`: logical timeframe used by the strategy, such as `1d`
+- `hour`: optional hour used when building one observation per day from hourly bars
+- `hour_timezone`: timezone used for that hour selection
+
+The strategy parameters are passed later when calling `run(...)` or `run_monte_carlo(...)`:
+
+- `bias`: if `False`, the signal is `+1 / -1`; if `True`, short signals become `0`
 - `MA`: moving-average window length
 - `fees`: transaction cost per unit of turnover
 - `target_vol`: target annualized volatility used in the position scaling
 - `vol_window`: rolling window used for the recent volatility estimate
 - `init_amount`: starting wealth used for the wealth curve
-- `hour`: optional hour used when building one observation per day from hourly bars
-- `hour_timezone`: timezone used for that hour selection
 
 Binance symbols must use the exchange format expected by `ccxt`, for example:
 - `BTC/USDT`
 - `ETH/USDT`
 
-The constructor stays explicit on purpose. The tuning inputs are not hidden behind strategy defaults.
+This split is intentional:
+- data settings are defined once
+- raw data can be fetched once and reused
+- strategy settings can be changed repeatedly without downloading data again
 
 ## File Structure
 
@@ -122,10 +128,10 @@ Main methods:
   Builds every sleeve independently, then merges them into one portfolio only after the sleeve-local work is complete.
 
 - `run()`
-  Runs the historical backtest.
+  Runs the historical backtest using the strategy parameters passed to that call.
 
 - `run_monte_carlo(...)`
-  Runs Monte Carlo on synthetic paths using the same evaluation pipeline.
+  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call.
 
 - `plot_wealth()`
   Plots the real wealth curve.
@@ -301,16 +307,18 @@ python -m pip install -r requirements.txt
 Typical workflow:
 
 1. Import `MomentumStrategy`.
-2. Instantiate it by explicitly passing the parameters you want.
-3. Call `run()` for the historical backtest or `run_monte_carlo(...)` for the Monte Carlo analysis.
-4. Read the output from:
+2. Instantiate it with the data-source settings you want.
+3. Call `fetch_data()` once if you want to reuse the same market data across many parameter sets.
+4. Call `run(...)` for the historical backtest or `run_monte_carlo(...)` for the Monte Carlo analysis, passing the strategy parameters there.
+5. Repeat `run(...)` with different strategy parameters without fetching again.
+6. Read the output from:
    - `s.summary`
    - `s.data`
    - `s.monte_carlo_summary`
    - `s.monte_carlo_path_summaries`
    - `s.monte_carlo_wealth`
-5. Export any dataframe with pandas if needed, for example with `.to_csv(...)`.
-6. Use `plot_wealth()` or `plot_monte_carlo()` for the visual outputs.
+7. Export any dataframe with pandas if needed, for example with `.to_csv(...)`.
+8. Use `plot_wealth()` or `plot_monte_carlo()` for the visual outputs.
 
 The README intentionally does not prescribe specific parameter values.
 

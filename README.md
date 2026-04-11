@@ -1,44 +1,48 @@
 # Strategies
 
-This repository is organized so each strategy can keep its own file while sharing common tools through a central utility module.
+This repository is organized so each strategy can live in its own file while common backtest, import, and analysis logic stays in a shared utility module.
 
 Current files:
-- [momentum.py](momentum.py): momentum strategy class and strategy-specific logic
-- [utils.py](utils.py): shared functions for data loading, returns, performance, plotting, and Monte Carlo analysis
-- [requirements.txt](requirements.txt): Python dependencies for the project
+- `momentum.py`: momentum strategy class and momentum-specific signal logic
+- `utils.py`: shared import, performance, plotting, and Monte Carlo helpers
+- `requirements.txt`: Python dependencies for the project
 
 ## Momentum Strategy
 
-The current strategy is a moving-average momentum strategy with target-volatility scaling.
+The current strategy is a moving-average momentum strategy with volatility targeting.
 
-It works for:
-- one single ticker
-- several tickers
+It can work with:
+- Yahoo Finance symbols through `ticker`
+- Binance symbols through `crypto`
+- one single sleeve
+- a basket mixing stocks and crypto
 
-When several tickers are used:
-- the same parameters are applied to every ticker
-- each ticker gets weight `1 / number_of_tickers`
-- the final summary is computed from the total equal-weight portfolio wealth
+At least one of `ticker` or `crypto` must be provided. If both are empty, the class raises:
+- `select at least one ticker`
 
 ### Inputs
 
 The `MomentumStrategy` class takes:
 
-- `ticker`: one ticker string or a list of tickers
+- `ticker`: one Yahoo ticker or a list of Yahoo tickers
+- `crypto`: one Binance symbol or a list of Binance symbols
 - `start`: start date for the data
 - `end`: end date for the data
 - `bias`: if `False`, the signal is `+1 / -1`; if `True`, short signals become `0`
-- `tf`: Yahoo Finance interval such as `1d`
-- `MA`: moving average window length
+- `tf`: logical timeframe used by the strategy, such as `1d`
+- `MA`: moving-average window length
 - `fees`: transaction cost per unit of turnover
-- `target_vol`: target annualized volatility for the position sizing
+- `target_vol`: target annualized volatility used in the position scaling
 - `vol_window`: rolling window used for the recent volatility estimate
 - `init_amount`: starting wealth used for the wealth curve
-- `hour`: optional hour used only when you want a daily series built from hourly bars
-- `hour_timezone`: timezone used for that hour selection, for example `UTC`, `UTC+1`, or an IANA timezone name; defaults to `UTC`
+- `hour`: optional hour used when building one observation per day from hourly bars
+- `hour_timezone`: timezone used for that hour selection
 
-The constructor is intentionally explicit now.
-There are no strategy defaults in the class signature for these tuning inputs, so each run has to state its choices directly.
+Binance symbols must use the exchange format expected by `ccxt`, for example:
+- `BTC/USDT`
+- `ETH/USDT`
+
+The constructor stays explicit on purpose. The tuning inputs are not hidden behind strategy defaults.
 
 ## File Structure
 
@@ -48,12 +52,21 @@ This file contains reusable functions that can be shared by future strategies.
 
 Main functions:
 
-- `fetch_data(...)`
-  Downloads raw Yahoo Finance data and normalizes the columns for one ticker or several tickers.
-  If `tf='1d'` and no hour is provided, it uses Yahoo daily bars.
-  If `tf='1d'` and an hour is provided, it builds a daily series from hourly bars using the bar that starts at the chosen hour in the chosen timezone.
+- `normalize_symbol_input(...)`
+  Turns a symbol input into a clean list.
 
-- `build_daily_snapshot_from_hourly(data, hour, hour_timezone)`
+- `fetch_data(...)`
+  Fetches one native dataframe per sleeve.
+  Yahoo symbols are downloaded through `yfinance`.
+  Crypto symbols are downloaded through Binance with `ccxt`.
+
+- `fetch_yahoo_symbol(...)`
+  Downloads one Yahoo symbol and normalizes the OHLCV columns.
+
+- `fetch_binance_symbol(...)`
+  Downloads one Binance symbol with chunked `fetch_ohlcv(...)` calls so longer histories can be assembled from the exchange limit.
+
+- `build_daily_snapshot_from_hourly(...)`
   Selects one hourly bar per local day, using the bar that starts at the chosen hour.
 
 - `log_return(close)`
@@ -63,130 +76,163 @@ Main functions:
   Estimates the natural annualization frequency from timestamp spacing.
 
 - `rolling_annualized_vol(log_returns, window, min_periods)`
-  Computes annualized rolling volatility on a rolling time window.
+  Computes annualized rolling volatility from log returns.
 
-- `calculate_performance(returns, positions, fees, log_return)`
-  Takes an asset return series plus a position series and computes:
-  - turnover
-  - gross strategy return
-  - fee cost
-  - net strategy return
-  - wealth
-  - running peak
-  - drawdown
-  - summary metrics
+- `calculate_performance(...)`
+  Takes a sleeve return series plus a sleeve position series and computes sleeve-level turnover, fees, net returns, wealth, drawdown, and summary metrics.
 
-- `summarize_returns(init_amount, strategy_returns, fee_cost, ...)`
-  Turns a net strategy return stream into wealth, drawdown, and summary metrics.
-  This is especially useful when combining several ticker sleeves into one total portfolio return stream.
+- `combine_sleeve_frames(...)`
+  Merges already-built sleeves on the union of timestamps and creates the total portfolio path.
 
-- `plot_wealth(wealth, ...)`
-  Plots a standard wealth curve in seaborn style.
-
-- `generate_monte_carlo_paths(close, n_paths, seed)`
+- `generate_monte_carlo_paths(...)`
   Builds synthetic close paths by bootstrap-resampling historical simple returns.
-  It works with one ticker or several tickers.
 
-- `calculate_monte_carlo_performance(close, evaluator, ...)`
-  Runs a strategy callback on every simulated path, stores the path-by-path results, and aggregates the statistics.
+- `calculate_monte_carlo_performance(...)`
+  Re-runs the evaluator on each synthetic path and aggregates the results.
 
-- `summarize_monte_carlo_results(...)`
-  Computes the average metric across Monte Carlo paths and adds a 95% confidence interval for that estimated average.
+- `plot_wealth(...)`
+  Plots a single wealth curve.
 
-- `plot_monte_carlo_wealth(wealth_paths, ...)`
-  Plots all simulated wealth paths, the average path, and a 95% envelope so the spread is visible.
+- `plot_monte_carlo_wealth(...)`
+  Plots all Monte Carlo wealth paths, their mean path, and a confidence envelope.
 
 ### `momentum.py`
 
-This file contains only the strategy-specific parts.
+This file contains only the momentum-specific parts.
 
 Main methods:
 
 - `fetch_data()`
-  Downloads and stores the raw market data.
-  If `tf='1d'` and no hour is provided, it uses Yahoo daily data.
-  If `tf='1d'` and an hour is provided, it builds the daily observation series from hourly market bars through the constructor settings.
+  Downloads and stores one native raw dataframe per sleeve.
 
 - `_build_single_ticker_frame(close)`
-  Builds the momentum-specific columns for one ticker:
+  Builds the momentum-specific columns for one sleeve:
   - close
   - simple return
   - log return
   - moving average
   - signal
   - recent volatility
-  - position size
+  - raw position
 
 - `_evaluate_single_ticker(close, ticker_name)`
-  Computes the full performance of one ticker sleeve using `utils.calculate_performance(...)`.
+  Computes the full sleeve performance on the sleeve's native calendar.
 
-- `_evaluate_multi_ticker(close_frame)`
-  Combines several ticker sleeves into one equal-weight portfolio and computes the summary from total wealth.
+- `_evaluate_multi_ticker(close_map)`
+  Builds every sleeve independently, then merges them into one portfolio only after the sleeve-local work is complete.
 
 - `run()`
-  Runs the strategy on the real historical close prices.
+  Runs the historical backtest.
 
 - `run_monte_carlo(...)`
-  Runs the strategy on many synthetic close paths generated from the historical return distribution.
+  Runs Monte Carlo on synthetic paths using the same evaluation pipeline.
 
 - `plot_wealth()`
-  Plots the real total wealth curve.
+  Plots the real wealth curve.
 
 - `plot_monte_carlo()`
-  Plots the Monte Carlo wealth spread, mean path, and 95% envelope.
+  Plots the Monte Carlo wealth spread.
+
+## Import Logic
+
+### Yahoo sleeves
+
+Symbols passed through `ticker` are fetched from Yahoo Finance.
+
+### Crypto sleeves
+
+Symbols passed through `crypto` are fetched from Binance through `ccxt`.
+
+The Binance import follows a chunked OHLCV workflow:
+- request data in repeated batches
+- move `since` forward by one timeframe after each batch
+- stop when the requested end date is reached
+- drop duplicate timestamps
+- keep the requested date range only
+
+Each sleeve stays on its own native calendar after import.
+
+## Daily Timing Logic
+
+This point matters for execution assumptions.
+
+When `tf='1d'` and `hour` is not provided:
+- Yahoo sleeves use native daily Yahoo bars
+- crypto sleeves use native daily Binance bars
+
+When `tf='1d'` and `hour` is provided:
+- Yahoo sleeves fetch hourly bars and select the bar that starts at the chosen local hour
+- crypto sleeves do the same
+- that selected hourly bar becomes the one daily observation used by the strategy
+
+Example interpretation:
+- if the chosen hour is `09:00`, the strategy uses the `09:00 -> 10:00` bar
+- the signal is built from that completed bar
+- because positions are shifted by one bar in the backtest, the strategy cannot trade on that same information bar
+- the earliest tradeable point is from the next selected bar onward
+
+If `hour_timezone` is an IANA timezone such as `Europe/Zurich`, daylight saving time is handled through that timezone conversion before the hour selection is applied.
 
 ## Strategy Logic
 
-For each ticker, the momentum strategy works in this order:
+For each sleeve, the momentum logic is built in this order:
 
-1. Download raw data from Yahoo Finance.
+1. Fetch raw data on the sleeve's native calendar.
 2. Compute simple returns and log returns from the close price.
-3. Compute the moving average on the close price.
+3. Compute the moving average.
 4. Build the signal:
    - if `close > moving average`, signal = `+1`
    - otherwise, signal = `-1`
-5. If `bias=True`, replace `-1` by `0`.
+5. If `bias=True`, replace `-1` with `0`.
 6. Compute recent annualized volatility over the chosen rolling window.
 7. Compute the raw position:
    `signal * target_vol / recent_vol`
-8. This means the strategy tries to scale each sleeve so its annualized volatility is closer to the chosen target.
-9. Shift the position by one period when computing strategy returns.
-10. Deduct fees from turnover.
-11. Compound net returns into the wealth curve.
+8. Shift the position by one period when converting sleeve returns into strategy returns.
+9. Deduct fees from sleeve turnover.
+10. Compound the sleeve net returns into the sleeve wealth curve.
 
-## Daily Data Timing
+## Sleeve-First Construction Rule
 
-This point is important.
+This is a core design rule of the repository.
 
-When `tf='1d'` and no `hour` is provided:
-- the strategy uses Yahoo daily bars
-- this is daily bar data from Yahoo
+Each sleeve is fully built on its own native timestamps before any cross-source merge happens.
 
-When `tf='1d'` and an `hour` is provided:
-- the strategy fetches hourly bars
-- it selects the bar that starts at the chosen `hour` in the chosen `hour_timezone`
-- that selected hourly bar becomes the daily observation used by the strategy
+That means:
+- moving averages are computed on the sleeve's real history only
+- volatility is computed on the sleeve's real history only
+- signals are computed on the sleeve's real history only
+- raw positions are computed on the sleeve's real history only
 
-So in practice:
-- if `hour=15`, the strategy uses the hourly bar from `15:00` to `16:00`
-- the signal is built from the values of that bar
-- because the position is shifted by one bar, the strategy can only trade based on that signal from the next bar onward
+No forward-fill is allowed before those sleeve-local steps are finished.
 
-So a `15:00` selection means:
-- the `15:00 -> 16:00` bar is the information bar
-- the strategy is not allowed to trade on that same bar
-- the earliest tradeable moment is from the following selected bar onward
+This avoids distorting:
+- moving averages
+- volatility estimates
+- signal timing
+- turnover
 
-So `tf='1d'` can behave in two ways:
-- standard daily mode if no hour is given
-- one-observation-per-day hourly-snapshot mode if an hour is given
+## Portfolio Merge Logic
 
-If several tickers are used:
+Only after every sleeve has been fully constructed do the sleeves get merged together.
 
-1. The exact same logic is run independently for each ticker.
-2. Each ticker sleeve produces its own net strategy return series.
-3. The portfolio return is the equal-weight average of these ticker net return series.
-4. The portfolio summary is then computed from this total portfolio return stream.
+The merge works like this:
+
+1. Build the union of all timestamps across all sleeves.
+2. Reindex each sleeve on that union.
+3. Forward-fill sleeve `close` and sleeve `position`.
+4. Treat a sleeve as active when its carried position is non-zero.
+5. Count the number of active sleeves at each timestamp.
+6. Scale active sleeves by `1 / active_sleeves_t`.
+7. Sum the weighted sleeve return contributions into one portfolio return stream.
+8. Compute the final portfolio wealth, fees, drawdown, and summary from that total return stream.
+
+Important consequence:
+- if stock sleeves still carry non-zero positions through the weekend, they remain part of the active portfolio
+- their carried prices do not move while the market is closed, so their weekend return stays zero
+- crypto sleeves continue to move on weekend timestamps
+- crypto sleeves do not absorb the stock capital just because stocks have no fresh bars
+
+Forward-fill happens only at this portfolio stage.
 
 ## Performance Metrics
 
@@ -199,51 +245,40 @@ The summary includes:
 - `average_return_factor`: geometric average return factor during active periods
 - `sharpe_ratio_annualized`: annualized Sharpe based on normal net returns, with flat periods counted as zero return
 
-For a basket of tickers, these metrics are computed from the total equal-weight portfolio wealth and return stream, not by averaging each ticker summary row separately.
+For a basket, these metrics are computed from the final total portfolio wealth path, not by averaging sleeve summary rows.
 
 Interpretation of `yearly_factor`:
-- if `yearly_factor = 1.10`, that means an average annual growth factor of 10%
-- over `N` years, `init_amount * yearly_factor ** N` gives the ending wealth implied by that average geometric annual rate
+- if `yearly_factor = 1.10`, that means an average annual multiplication factor of `1.10`
+- over `N` years, `init_amount * yearly_factor ** N` gives the ending wealth implied by that average geometric annual factor
 
 ## Monte Carlo Analysis
 
-The Monte Carlo module answers a different question from the historical backtest.
+The Monte Carlo module does not use the single realized path directly.
 
-Instead of using the one realized close path, it:
+Instead it:
 - takes the historical simple return distribution
 - resamples returns with replacement
-- reconstructs synthetic close paths
-- reruns the strategy on every path
-- measures the distribution of outcomes
+- rebuilds synthetic close paths
+- reruns the strategy on each path
+- aggregates the resulting metrics
 
-### Multi-Ticker Monte Carlo
+### Multi-Source Monte Carlo
 
-This part is important when several tickers are used.
+For a basket:
+- each sleeve gets its own synthetic path
+- each sleeve is evaluated on its own synthetic native path first
+- only after sleeve-local evaluation are the sleeves merged into a total portfolio
+- the same post-construction merge rule is used as in the historical backtest
 
-For a basket of several tickers:
-- each ticker gets its own resampled synthetic return path
-- one Monte Carlo path means one synthetic path for every ticker in the basket
-- the strategy is rerun on the full basket path
-- the equal-weight portfolio return is then recomputed from those synthetic ticker sleeves
+So Monte Carlo stays aligned with the real backtest architecture:
+- sleeve first
+- merge later
 
-So Monte Carlo remains coherent at the total portfolio level, not just ticker by ticker in isolation.
+### Confidence Intervals
 
-### What The Monte Carlo Output Means
+Monte Carlo summary metrics are reported with confidence intervals because the estimated average depends on how many paths are generated.
 
-The Monte Carlo summary returns the same style of metrics as the standard backtest, but each metric is now:
-- the average across all simulated paths
-- plus a 95% confidence interval for that estimated average
-
-This matters because the average from Monte Carlo depends on how many paths are generated.
-
-For example:
-- `yearly_factor` is the average annual return factor across the simulated paths
-- `yearly_factor_ci_lower` and `yearly_factor_ci_upper` give a 95% confidence interval for that average estimate
-
-The Monte Carlo wealth plot shows:
-- every individual simulated wealth path in the background
-- the average wealth path
-- a 95% envelope across paths to visualize the spread
+The interval reported in the summary is a confidence interval for the estimated mean metric across simulated paths.
 
 ## Installation
 
@@ -266,7 +301,7 @@ python -m pip install -r requirements.txt
 Typical workflow:
 
 1. Import `MomentumStrategy`.
-2. Instantiate it by explicitly passing all required parameters.
+2. Instantiate it by explicitly passing the parameters you want.
 3. Call `run()` for the historical backtest or `run_monte_carlo(...)` for the Monte Carlo analysis.
 4. Read the output from:
    - `s.summary`
@@ -278,20 +313,20 @@ Typical workflow:
 6. Use `plot_wealth()` or `plot_monte_carlo()` for the visual outputs.
 
 The README intentionally does not prescribe specific parameter values.
-The class interface is explicit, so the user chooses every setting directly when creating the strategy object.
 
 ## Data Structure Note
 
-When you use one ticker:
-- `s.data` is a standard dataframe for that ticker
+When one sleeve is used:
+- `s.data` is a standard dataframe for that sleeve
 
-When you use several tickers:
+When several sleeves are used:
 - `s.data` uses grouped columns
-- each ticker has its own block of columns
-- there is also a `portfolio` block containing the total equal-weight portfolio metrics
+- each sleeve has its own block of columns
+- there is also a `portfolio` block containing the total portfolio metrics
 
 So for example:
-- `s.data['TICKER_NAME']` gives one ticker sleeve details
+- `s.data['AAPL']` gives one sleeve block
+- `s.data['BTC/USDT']` gives one sleeve block
 - `s.data['portfolio']` gives the total portfolio wealth, drawdown, fees, and returns
 
 ## Future Strategies
@@ -303,8 +338,3 @@ If a new strategy is added later, the idea is:
 - create one new file per strategy
 - keep strategy-specific signal logic in the strategy file
 - keep shared backtest and Monte Carlo logic reusable
-
-Typical future additions could be:
-- `mean_reversion.py`
-- `breakout.py`
-- `pairs_trading.py`

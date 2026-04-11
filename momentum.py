@@ -4,12 +4,13 @@ import pandas as pd
 from utils import (
     calculate_monte_carlo_performance,
     calculate_performance,
+    combine_sleeve_frames,
     fetch_data,
     log_return,
+    normalize_symbol_input,
     plot_monte_carlo_wealth,
     plot_wealth,
     rolling_annualized_vol,
-    summarize_returns,
 )
 
 
@@ -17,7 +18,9 @@ class MomentumStrategy:
     # Initialize the strategy inputs and prepare placeholders for raw data and results.
     def __init__(
         self,
-        ticker,
+        ticker=None,
+        crypto=None,
+        *,
         start,
         end,
         bias,
@@ -31,8 +34,15 @@ class MomentumStrategy:
         hour_timezone="UTC",
     ):
         self.ticker = ticker
-        self.tickers = [ticker] if isinstance(ticker, str) else list(ticker)
-        self.ticker_label = ",".join(self.tickers)
+        self.crypto = crypto
+        self.tickers = normalize_symbol_input(ticker)
+        self.crypto_tickers = normalize_symbol_input(crypto)
+        self.symbols = self.tickers + self.crypto_tickers
+
+        if not self.symbols:
+            raise ValueError("select at least one ticker")
+
+        self.ticker_label = ",".join(self.symbols)
         self.start = start
         self.end = end
         self.bias = bias
@@ -45,19 +55,19 @@ class MomentumStrategy:
         self.hour = hour
         self.hour_timezone = hour_timezone
 
-        self.raw_data = pd.DataFrame()
+        self.raw_data = {}
         self.data = pd.DataFrame()
         self.summary = pd.DataFrame()
-        self.monte_carlo_paths = pd.DataFrame()
+        self.monte_carlo_paths = {}
         self.monte_carlo_wealth = pd.DataFrame()
         self.monte_carlo_path_summaries = pd.DataFrame()
         self.monte_carlo_summary = pd.DataFrame()
 
-    # Download and store the raw Yahoo Finance data used by the strategy.
+    # Download and store one native raw dataframe per selected sleeve.
     def fetch_data(self):
-        tickers = self.tickers[0] if len(self.tickers) == 1 else self.tickers
         self.raw_data = fetch_data(
-            ticker=tickers,
+            ticker=self.tickers,
+            crypto=self.crypto_tickers,
             start=self.start,
             end=self.end,
             interval=self.tf,
@@ -68,32 +78,41 @@ class MomentumStrategy:
         )
         return self.raw_data
 
-    # Extract close prices as a consistent dataframe for both single and multiple tickers.
-    def _close_frame(self, close_source=None):
+    # Extract one close series per sleeve from raw data or Monte Carlo inputs.
+    def _close_map(self, close_source=None):
         source = self.raw_data if close_source is None else close_source
 
         if isinstance(source, pd.Series):
-            return source.to_frame(name=self.tickers[0]).astype(float)
+            return {self.symbols[0]: source.astype(float)}
 
-        if not isinstance(source, pd.DataFrame):
-            raise ValueError("Close source must be a pandas Series or DataFrame.")
+        if isinstance(source, dict):
+            close_map = {}
+            for symbol, value in source.items():
+                if isinstance(value, pd.Series):
+                    close_map[symbol] = value.astype(float)
+                elif isinstance(value, pd.DataFrame) and "close" in value.columns:
+                    close_map[symbol] = value["close"].astype(float)
+                else:
+                    raise ValueError("Each sleeve must be a Series or a DataFrame with a 'close' column.")
+            return close_map
 
-        if isinstance(source.columns, pd.MultiIndex):
-            close_frame = source["close"].copy()
-            if isinstance(close_frame, pd.Series):
-                close_frame = close_frame.to_frame(name=self.tickers[0])
-        elif "close" in source.columns:
-            close_frame = source[["close"]].copy()
-            close_frame.columns = [self.tickers[0]]
-        else:
-            close_frame = source.copy()
+        if isinstance(source, pd.DataFrame):
+            if isinstance(source.columns, pd.MultiIndex) and "close" in source.columns.get_level_values(0):
+                close_frame = source["close"]
+                return {symbol: close_frame[symbol].astype(float) for symbol in close_frame.columns}
+            if "close" in source.columns:
+                return {self.symbols[0]: source["close"].astype(float)}
+            return {symbol: source[symbol].astype(float) for symbol in source.columns}
 
-        close_frame = close_frame.astype(float)
-        close_frame = close_frame.reindex(columns=self.tickers)
-        return close_frame
+        raise ValueError("Close source must be a Series, DataFrame, or mapping.")
 
-    # Build the momentum-specific signal, recent volatility, and target-vol position sizing columns for one ticker.
+    # Build the momentum-specific signal, recent volatility, and target-vol position sizing columns for one sleeve.
     def _build_single_ticker_frame(self, close):
+        if isinstance(close, pd.DataFrame):
+            if close.shape[1] != 1:
+                raise ValueError("Each sleeve close input must be one-dimensional.")
+            close = close.iloc[:, 0]
+
         close = pd.Series(close, copy=False).astype(float)
 
         df = pd.DataFrame(index=close.index)
@@ -118,7 +137,7 @@ class MomentumStrategy:
         df.loc[~np.isfinite(df["position"]), "position"] = np.nan
         return df
 
-    # Evaluate one ticker path by building strategy columns and delegating performance calculations to utils.
+    # Evaluate one sleeve on its own native calendar before any cross-source merge happens.
     def _evaluate_single_ticker(self, close, ticker_name):
         df = self._build_single_ticker_frame(close)
         performance_data, summary = calculate_performance(
@@ -161,28 +180,17 @@ class MomentumStrategy:
         )
         return df, summary
 
-    # Combine multiple ticker sleeves into an equal-weight portfolio and summarize from total wealth.
-    def _evaluate_multi_ticker(self, close_frame):
-        ticker_frames = {}
-        ticker_net_returns = {}
-        ticker_fee_costs = {}
+    # Combine multiple fully-built sleeves only after each sleeve finished local indicator construction.
+    def _evaluate_multi_ticker(self, close_map):
+        sleeve_frames = {}
+        for ticker_name, close_series in close_map.items():
+            frame, _ = self._evaluate_single_ticker(close_series, ticker_name)
+            sleeve_frames[ticker_name] = frame
 
-        for ticker_name in close_frame.columns:
-            frame, _ = self._evaluate_single_ticker(close_frame[ticker_name], ticker_name)
-            ticker_frames[ticker_name] = frame
-            ticker_net_returns[ticker_name] = frame["net_strategy_return"].fillna(0.0)
-            ticker_fee_costs[ticker_name] = frame["fee_cost"].fillna(0.0)
-
-        ticker_net_returns = pd.DataFrame(ticker_net_returns, index=close_frame.index)
-        ticker_fee_costs = pd.DataFrame(ticker_fee_costs, index=close_frame.index)
-
-        portfolio_returns = ticker_net_returns.mean(axis=1)
-        portfolio_fees = ticker_fee_costs.mean(axis=1)
-
-        portfolio_data, summary = summarize_returns(
+        return combine_sleeve_frames(
+            sleeve_frames=sleeve_frames,
             init_amount=self.init_amount,
-            strategy_returns=portfolio_returns,
-            fee_cost=portfolio_fees,
+            fees=self.fees,
             summary_meta={
                 "ticker": self.ticker_label,
                 "start": pd.to_datetime(self.start),
@@ -195,37 +203,21 @@ class MomentumStrategy:
                 "hour": self.hour,
                 "hour_timezone": self.hour_timezone,
             },
-            active_mask=portfolio_returns != 0,
         )
 
-        portfolio_frame = pd.DataFrame(index=close_frame.index)
-        portfolio_frame["weight"] = 1.0 / len(close_frame.columns)
-        portfolio_frame["net_strategy_return"] = portfolio_data["net_strategy_return"]
-        portfolio_frame["net_log_return"] = portfolio_data["net_log_return"]
-        portfolio_frame["fee_cost"] = portfolio_data["fee_cost"]
-        portfolio_frame["cum_fees"] = portfolio_data["cum_fees"]
-        portfolio_frame["wealth"] = portfolio_data["wealth"]
-        portfolio_frame["running_peak"] = portfolio_data["running_peak"]
-        portfolio_frame["drawdown%"] = portfolio_data["drawdown%"]
-        portfolio_frame["active_tickers"] = (ticker_net_returns != 0).sum(axis=1)
-
-        ticker_frames["portfolio"] = portfolio_frame
-        combined_data = pd.concat(ticker_frames, axis=1)
-        return combined_data, summary
-
-    # Evaluate either a single ticker or a basket of tickers through the same interface.
+    # Evaluate either a single sleeve or a basket of sleeves through the same interface.
     def _evaluate_close_series(self, close_source):
-        close_frame = self._close_frame(close_source)
+        close_map = self._close_map(close_source)
 
-        if len(close_frame.columns) == 1:
-            ticker_name = close_frame.columns[0]
-            return self._evaluate_single_ticker(close_frame.iloc[:, 0], ticker_name)
+        if len(close_map) == 1:
+            ticker_name = next(iter(close_map))
+            return self._evaluate_single_ticker(close_map[ticker_name], ticker_name)
 
-        return self._evaluate_multi_ticker(close_frame)
+        return self._evaluate_multi_ticker(close_map)
 
     # Run the backtest on the real observed close prices.
     def run(self):
-        if self.raw_data.empty:
+        if not self.raw_data:
             self.fetch_data()
 
         self.data, self.summary = self._evaluate_close_series(self.raw_data)
@@ -233,12 +225,12 @@ class MomentumStrategy:
 
     # Run a bootstrap Monte Carlo on historical returns and summarize average metrics with confidence intervals.
     def run_monte_carlo(self, n_paths=250, seed=None, confidence=0.95):
-        if self.raw_data.empty:
+        if not self.raw_data:
             self.fetch_data()
 
-        close_input = self._close_frame()
-        if len(self.tickers) == 1:
-            close_input = close_input.iloc[:, 0]
+        close_input = self._close_map()
+        if len(close_input) == 1:
+            close_input = close_input[next(iter(close_input))]
 
         monte_carlo_results = calculate_monte_carlo_performance(
             close=close_input,
@@ -274,12 +266,16 @@ class MomentumStrategy:
         self.monte_carlo_summary = monte_carlo_results["summary"]
         return self.monte_carlo_summary
 
-    # Plot the wealth curve of the real backtest using total portfolio wealth when several tickers are used.
+    # Plot the wealth curve of the real backtest using total portfolio wealth when several sleeves are used.
     def plot_wealth(self):
         if self.data.empty:
             self.run()
 
-        wealth = self.data["portfolio"]["wealth"] if isinstance(self.data.columns, pd.MultiIndex) else self.data["wealth"]
+        wealth = (
+            self.data["portfolio"]["wealth"]
+            if isinstance(self.data.columns, pd.MultiIndex)
+            else self.data["wealth"]
+        )
         return plot_wealth(
             wealth,
             title=f"{self.ticker_label} Momentum Strategy Wealth",

@@ -1,12 +1,15 @@
-from statistics import NormalDist
 from datetime import timedelta, timezone
+from statistics import NormalDist
 import re
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import yfinance as yf
+
+try:
+    import ccxt
+except ImportError:  # pragma: no cover - handled at runtime when crypto data is requested
+    ccxt = None
 
 
 # Parse a timezone label such as UTC, UTC+1, UTC-05:00, or an IANA zone name.
@@ -32,6 +35,24 @@ def parse_timezone(timezone_label):
     return label
 
 
+# Normalize a string/list input into a clean list of symbols.
+def normalize_symbol_input(symbols):
+    if symbols is None:
+        return []
+
+    if isinstance(symbols, str):
+        symbols = [symbols]
+
+    normalized = []
+    for symbol in symbols:
+        if symbol is None:
+            continue
+        symbol = str(symbol).strip()
+        if symbol:
+            normalized.append(symbol)
+    return normalized
+
+
 # Select one hourly bar per local day, using the bar that starts at the chosen hour.
 def build_daily_snapshot_from_hourly(data, hour=0, hour_timezone="UTC"):
     if data.empty:
@@ -44,10 +65,9 @@ def build_daily_snapshot_from_hourly(data, hour=0, hour_timezone="UTC"):
     if intraday.index.tz is None:
         intraday.index = intraday.index.tz_localize("UTC")
 
-    local_index = intraday.index.tz_convert(parsed_timezone)
-    intraday.index = local_index
+    intraday.index = intraday.index.tz_convert(parsed_timezone)
+    selected = intraday[intraday.index.hour == hour].copy()
 
-    selected = intraday[local_index.hour == hour].copy()
     if selected.empty:
         raise ValueError(
             f"No hourly bars found at hour {hour} in timezone {hour_timezone}."
@@ -60,9 +80,46 @@ def build_daily_snapshot_from_hourly(data, hour=0, hour_timezone="UTC"):
     return selected.sort_index()
 
 
-# Download raw market data from Yahoo Finance and normalize the output columns.
-def fetch_data(
-    ticker,
+# Return the exchange timeframe string used for the requested logical interval.
+def resolve_fetch_interval(interval, hour):
+    return "1h" if interval == "1d" and hour is not None else interval
+
+
+# Convert a raw OHLCV dataframe to the project-normalized column format.
+def normalize_ohlcv_frame(data):
+    frame = data.copy()
+    frame.index = pd.to_datetime(frame.index)
+
+    if isinstance(frame.columns, pd.MultiIndex):
+        if frame.columns.nlevels == 2 and len(frame.columns.get_level_values(1).unique()) == 1:
+            frame.columns = frame.columns.get_level_values(0)
+            frame = frame.rename(columns=str.lower)
+            return frame.sort_index()
+
+        frame.columns = pd.MultiIndex.from_tuples(
+            [(str(level_0).lower(), str(level_1)) for level_0, level_1 in frame.columns]
+        )
+    else:
+        frame = frame.rename(columns=str.lower)
+
+    return frame.sort_index()
+
+
+# Convert a fetched dataframe to a native daily frame or an hourly-snapshot daily frame.
+def finalize_market_frame(data, interval, hour, hour_timezone):
+    frame = normalize_ohlcv_frame(data)
+    if interval == "1d" and hour is not None:
+        return build_daily_snapshot_from_hourly(frame, hour=hour, hour_timezone=hour_timezone)
+
+    if getattr(frame.index, "tz", None) is not None:
+        frame.index = frame.index.tz_convert("UTC").tz_localize(None)
+
+    return frame
+
+
+# Fetch one Yahoo Finance symbol.
+def fetch_yahoo_symbol(
+    symbol,
     start,
     end,
     interval="1d",
@@ -71,10 +128,9 @@ def fetch_data(
     hour=None,
     hour_timezone="UTC",
 ):
-    use_hourly_snapshot = interval == "1d" and hour is not None
-    yahoo_interval = "1h" if use_hourly_snapshot else interval
+    yahoo_interval = resolve_fetch_interval(interval, hour)
     data = yf.download(
-        ticker,
+        symbol,
         start=start,
         end=end,
         interval=yahoo_interval,
@@ -83,20 +139,104 @@ def fetch_data(
     )
 
     if data.empty:
-        raise ValueError(f"No Yahoo Finance data returned for {ticker}.")
+        raise ValueError(f"No Yahoo Finance data returned for {symbol}.")
 
-    data.index = pd.to_datetime(data.index)
-    if use_hourly_snapshot:
-        data = build_daily_snapshot_from_hourly(data, hour=hour, hour_timezone=hour_timezone)
+    return finalize_market_frame(data, interval=interval, hour=hour, hour_timezone=hour_timezone)
 
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns = pd.MultiIndex.from_tuples(
-            [(str(level_0).lower(), str(level_1)) for level_0, level_1 in data.columns]
+
+# Fetch one Binance symbol using chunked OHLCV calls.
+def fetch_binance_symbol(
+    symbol,
+    start,
+    end,
+    interval="1d",
+    hour=None,
+    hour_timezone="UTC",
+):
+    if ccxt is None:
+        raise ImportError("ccxt is required to fetch crypto data from Binance.")
+
+    exchange = ccxt.binance()
+    fetch_interval = resolve_fetch_interval(interval, hour)
+    timeframe_ms = exchange.parse_timeframe(fetch_interval) * 1000
+
+    start_ts = int(pd.Timestamp(start, tz="UTC").timestamp() * 1000)
+    end_ts = int(pd.Timestamp(end, tz="UTC").timestamp() * 1000)
+
+    rows = []
+    since = start_ts
+    chunk = 1000
+
+    while since < end_ts:
+        batch = exchange.fetch_ohlcv(symbol, timeframe=fetch_interval, since=since, limit=chunk)
+        if not batch:
+            break
+
+        rows.extend(batch)
+        next_since = batch[-1][0] + timeframe_ms
+        if next_since <= since:
+            break
+        since = next_since
+
+    if not rows:
+        raise ValueError(f"No Binance data returned for {symbol}.")
+
+    frame = pd.DataFrame(
+        rows,
+        columns=["timestamp", "open", "high", "low", "close", "volume"],
+    )
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], unit="ms", utc=True)
+    frame = frame.drop_duplicates(subset="timestamp").set_index("timestamp").sort_index()
+    frame = frame[(frame.index >= pd.Timestamp(start, tz="UTC")) & (frame.index < pd.Timestamp(end, tz="UTC"))]
+
+    if frame.empty:
+        raise ValueError(f"No Binance data returned for {symbol} in the requested period.")
+
+    return finalize_market_frame(frame, interval=interval, hour=hour, hour_timezone=hour_timezone)
+
+
+# Fetch Yahoo and Binance symbols and return one native dataframe per sleeve.
+def fetch_data(
+    ticker=None,
+    crypto=None,
+    start=None,
+    end=None,
+    interval="1d",
+    auto_adjust=True,
+    progress=False,
+    hour=None,
+    hour_timezone="UTC",
+):
+    yahoo_symbols = normalize_symbol_input(ticker)
+    crypto_symbols = normalize_symbol_input(crypto)
+
+    if not yahoo_symbols and not crypto_symbols:
+        raise ValueError("select at least one ticker")
+
+    data_map = {}
+    for symbol in yahoo_symbols:
+        data_map[symbol] = fetch_yahoo_symbol(
+            symbol=symbol,
+            start=start,
+            end=end,
+            interval=interval,
+            auto_adjust=auto_adjust,
+            progress=progress,
+            hour=hour,
+            hour_timezone=hour_timezone,
         )
-    else:
-        data = data.rename(columns=str.lower)
 
-    return data
+    for symbol in crypto_symbols:
+        data_map[symbol] = fetch_binance_symbol(
+            symbol=symbol,
+            start=start,
+            end=end,
+            interval=interval,
+            hour=hour,
+            hour_timezone=hour_timezone,
+        )
+
+    return data_map
 
 
 # Convert a close price series into log returns.
@@ -157,7 +297,7 @@ def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta
 
     summary_data["wealth"] = np.exp(summary_data["net_log_return"].cumsum()) * init_amount
     summary_data["cum_fees"] = summary_data["fee_cost"].cumsum() * init_amount
-    summary_data["running_peak"] = summary_data["wealth"].cummax() 
+    summary_data["running_peak"] = summary_data["wealth"].cummax()
     summary_data["drawdown%"] = (summary_data["wealth"] / summary_data["running_peak"]) - 1
 
     if active_mask is None:
@@ -246,8 +386,88 @@ def calculate_performance(init_amount, returns, positions, fees=0.0005, log_retu
     return data, summary
 
 
+# Merge fully-constructed sleeve frames onto a shared index and build the portfolio from carried positions.
+def combine_sleeve_frames(sleeve_frames, init_amount, fees, summary_meta=None):
+    union_index = pd.DatetimeIndex(
+        sorted(set().union(*[frame.index for frame in sleeve_frames.values()]))
+    )
+    merged_frames = {}
+    carried_positions = {}
+
+    for symbol, frame in sleeve_frames.items():
+        merged = frame.reindex(union_index)
+        merged["close"] = merged["close"].ffill()
+        merged["position"] = merged["position"].ffill().fillna(0.0)
+        merged["native_turnover"] = merged["turnover"].fillna(0.0)
+        merged["native_fee_cost"] = merged["fee_cost"].fillna(0.0)
+        merged["asset_simple_return"] = merged["close"].pct_change().fillna(0.0)
+        merged["active"] = merged["position"] != 0
+        merged_frames[symbol] = merged
+        carried_positions[symbol] = merged["position"]
+
+    carried_positions = pd.DataFrame(carried_positions, index=union_index)
+    active_assets = (carried_positions != 0).sum(axis=1)
+
+    portfolio_return_parts = []
+    portfolio_fee_parts = []
+
+    for symbol, merged in merged_frames.items():
+        weight = pd.Series(
+            np.where(active_assets > 0, 1.0 / active_assets, 0.0),
+            index=union_index,
+        )
+        merged["weight"] = np.where(merged["active"], weight, 0.0)
+        merged["weighted_position"] = merged["position"] * merged["weight"]
+        merged["weighted_position_prev"] = merged["weighted_position"].shift(1).fillna(0.0)
+        merged["gross_strategy_return"] = (
+            merged["weighted_position_prev"] * merged["asset_simple_return"]
+        )
+        merged["turnover"] = merged["native_turnover"] * merged["weight"]
+        merged["fee_cost"] = merged["native_fee_cost"] * merged["weight"]
+        merged["net_strategy_return"] = merged["gross_strategy_return"] - merged["fee_cost"]
+        merged["net_log_return"] = np.log1p(merged["net_strategy_return"].clip(lower=-0.999999))
+        merged_frames[symbol] = merged
+
+        portfolio_return_parts.append(merged["net_strategy_return"].rename(symbol))
+        portfolio_fee_parts.append(merged["fee_cost"].rename(symbol))
+
+    portfolio_returns = pd.concat(portfolio_return_parts, axis=1).sum(axis=1)
+    portfolio_fees = pd.concat(portfolio_fee_parts, axis=1).sum(axis=1)
+    active_previous = (
+        pd.concat(
+            [frame["weighted_position_prev"].rename(symbol) for symbol, frame in merged_frames.items()],
+            axis=1,
+        ).abs().sum(axis=1)
+        > 0
+    )
+
+    portfolio_data, summary = summarize_returns(
+        init_amount=init_amount,
+        strategy_returns=portfolio_returns,
+        fee_cost=portfolio_fees,
+        summary_meta=summary_meta,
+        active_mask=active_previous,
+    )
+
+    portfolio_frame = pd.DataFrame(index=union_index)
+    portfolio_frame["active_assets"] = active_assets
+    portfolio_frame["net_strategy_return"] = portfolio_data["net_strategy_return"]
+    portfolio_frame["net_log_return"] = portfolio_data["net_log_return"]
+    portfolio_frame["fee_cost"] = portfolio_data["fee_cost"]
+    portfolio_frame["cum_fees"] = portfolio_data["cum_fees"]
+    portfolio_frame["wealth"] = portfolio_data["wealth"]
+    portfolio_frame["running_peak"] = portfolio_data["running_peak"]
+    portfolio_frame["drawdown%"] = portfolio_data["drawdown%"]
+
+    merged_frames["portfolio"] = portfolio_frame
+    return pd.concat(merged_frames, axis=1), summary
+
+
 # Plot a single wealth curve in a seaborn-style chart.
 def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
     wealth = pd.Series(wealth, copy=False)
 
     sns.set_theme(style="darkgrid")
@@ -266,13 +486,13 @@ def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
     return fig, ax
 
 
-# Bootstrap historical simple returns to generate synthetic close paths for one or many tickers.
+# Bootstrap historical simple returns to generate synthetic close paths for one sleeve or many sleeves.
 def generate_monte_carlo_paths(close, n_paths=250, seed=None):
     rng = np.random.default_rng(seed)
 
     if isinstance(close, pd.Series):
-        close = pd.Series(close, copy=False).astype(float).dropna()
-        simple_returns = close.pct_change().dropna()
+        series = pd.Series(close, copy=False).astype(float).dropna()
+        simple_returns = series.pct_change().dropna()
 
         if simple_returns.empty:
             raise ValueError("Not enough price history to generate Monte Carlo paths.")
@@ -282,31 +502,26 @@ def generate_monte_carlo_paths(close, n_paths=250, seed=None):
             size=(len(simple_returns), n_paths),
             replace=True,
         )
-        compounded_paths = np.vstack(
-            [np.ones(n_paths), np.cumprod(1.0 + sampled_returns, axis=0)]
-        )
-        simulated_close = close.iloc[0] * compounded_paths
+        compounded_paths = np.vstack([np.ones(n_paths), np.cumprod(1.0 + sampled_returns, axis=0)])
+        simulated_close = series.iloc[0] * compounded_paths
         columns = [f"path_{path_id:04d}" for path_id in range(1, n_paths + 1)]
-        return pd.DataFrame(simulated_close, index=close.index, columns=columns)
+        return pd.DataFrame(simulated_close, index=series.index, columns=columns)
 
-    close = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
-    path_frames = {}
+    if isinstance(close, dict):
+        return {
+            symbol: generate_monte_carlo_paths(series, n_paths=n_paths, seed=rng.integers(0, 10**9))
+            for symbol, series in close.items()
+        }
 
-    for ticker in close.columns:
-        ticker_close = close[ticker].dropna()
-        ticker_paths = generate_monte_carlo_paths(ticker_close, n_paths=n_paths, seed=rng.integers(0, 10**9))
-        path_frames[ticker] = ticker_paths.reindex(close.index)
-
-    return pd.concat(path_frames, axis=1)
+    frame = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
+    return {
+        symbol: generate_monte_carlo_paths(frame[symbol].dropna(), n_paths=n_paths, seed=rng.integers(0, 10**9))
+        for symbol in frame.columns
+    }
 
 
 # Aggregate Monte Carlo path metrics and attach a confidence interval for the mean estimate.
-def summarize_monte_carlo_results(
-    path_summaries,
-    metric_columns,
-    confidence=0.95,
-    summary_meta=None,
-):
+def summarize_monte_carlo_results(path_summaries, metric_columns, confidence=0.95, summary_meta=None):
     if path_summaries.empty:
         raise ValueError("Monte Carlo path summaries are empty.")
 
@@ -336,39 +551,45 @@ def summarize_monte_carlo_results(
 
 
 # Run a generic Monte Carlo analysis by evaluating each simulated close path with a strategy callback.
-def calculate_monte_carlo_performance(
-    close,
-    evaluator,
-    metric_columns,
-    n_paths=250,
-    seed=None,
-    confidence=0.95,
-    summary_meta=None,
-):
+def calculate_monte_carlo_performance(close, evaluator, metric_columns, n_paths=250, seed=None, confidence=0.95, summary_meta=None):
     simulated_paths = generate_monte_carlo_paths(close, n_paths=n_paths, seed=seed)
     path_summaries = []
     wealth_paths = {}
 
-    if isinstance(simulated_paths.columns, pd.MultiIndex):
-        path_names = simulated_paths.columns.get_level_values(1).unique()
+    if isinstance(simulated_paths, dict):
+        first_symbol = next(iter(simulated_paths))
+        path_names = simulated_paths[first_symbol].columns
         for path_name in path_names:
-            path_close = simulated_paths.xs(path_name, axis=1, level=1)
+            path_close = {symbol: paths[path_name] for symbol, paths in simulated_paths.items()}
             path_data, path_summary = evaluator(path_close)
             summary_row = path_summary.iloc[0].to_dict()
             summary_row["path"] = path_name
             path_summaries.append(summary_row)
-            wealth_paths[path_name] = path_data["portfolio"]["wealth"]
+            wealth_series = (
+                path_data["portfolio"]["wealth"]
+                if isinstance(path_data.columns, pd.MultiIndex)
+                else path_data["wealth"]
+            )
+            wealth_paths[path_name] = wealth_series
+        wealth_index = wealth_paths[path_names[0]].index
     else:
-        for path_name in simulated_paths.columns:
+        path_names = simulated_paths.columns
+        for path_name in path_names:
             path_close = simulated_paths[path_name]
             path_data, path_summary = evaluator(path_close)
             summary_row = path_summary.iloc[0].to_dict()
             summary_row["path"] = path_name
             path_summaries.append(summary_row)
-            wealth_paths[path_name] = path_data["wealth"]
+            wealth_series = (
+                path_data["portfolio"]["wealth"]
+                if isinstance(path_data.columns, pd.MultiIndex)
+                else path_data["wealth"]
+            )
+            wealth_paths[path_name] = wealth_series
+        wealth_index = simulated_paths.index
 
     path_summaries = pd.DataFrame(path_summaries)
-    wealth_paths = pd.DataFrame(wealth_paths, index=simulated_paths.index)
+    wealth_paths = pd.DataFrame(wealth_paths, index=wealth_index)
     monte_carlo_summary = summarize_monte_carlo_results(
         path_summaries,
         metric_columns=metric_columns,
@@ -386,6 +607,9 @@ def calculate_monte_carlo_performance(
 
 # Plot the spread of Monte Carlo wealth paths together with the average path and a 95% envelope.
 def plot_monte_carlo_wealth(wealth_paths, title="Monte Carlo Wealth", log_scale=True):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
     wealth_paths = pd.DataFrame(wealth_paths, copy=False)
 
     if wealth_paths.empty:
@@ -399,13 +623,7 @@ def plot_monte_carlo_wealth(wealth_paths, title="Monte Carlo Wealth", log_scale=
     fig, ax = plt.subplots(figsize=(12, 6))
 
     for column in wealth_paths.columns:
-        ax.plot(
-            wealth_paths.index,
-            wealth_paths[column],
-            color="steelblue",
-            alpha=0.05,
-            linewidth=0.8,
-        )
+        ax.plot(wealth_paths.index, wealth_paths[column], color="steelblue", alpha=0.05, linewidth=0.8)
 
     ax.fill_between(
         wealth_paths.index,

@@ -486,7 +486,7 @@ def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
     return fig, ax
 
 
-# Pick a reasonable block length when the user does not specify one.
+# Pick a reasonable rolling estimation window when the user does not specify one.
 def infer_block_length(n_observations):
     if n_observations <= 1:
         return 1
@@ -494,99 +494,127 @@ def infer_block_length(n_observations):
     return max(5, min(n_observations, int(round(np.sqrt(n_observations)))))
 
 
-# Sample one synthetic path by stitching together contiguous blocks of returns.
-def sample_block_bootstrap_returns(return_array, block_length, rng):
-    n_observations = len(return_array)
-    if n_observations == 0:
-        raise ValueError("Not enough return history to generate Monte Carlo paths.")
+# Fill rolling mean and volatility estimates so the simulation can start from the first return.
+def prepare_rolling_gbm_parameters(log_returns, window):
+    window = max(1, min(int(window), len(log_returns)))
+    rolling_mean = log_returns.rolling(window=window, min_periods=window).mean()
+    rolling_std = log_returns.rolling(window=window, min_periods=window).std(ddof=1)
 
-    block_length = max(1, min(int(block_length), n_observations))
-    max_start = n_observations - block_length
-    sampled_blocks = []
-    collected = 0
+    fallback_mean = log_returns.mean()
+    fallback_std = log_returns.std(ddof=1)
+    if not np.isfinite(fallback_std) or fallback_std <= 0:
+        fallback_std = 1e-8
 
-    while collected < n_observations:
-        start = rng.integers(0, max_start + 1)
-        block = return_array[start : start + block_length]
-        sampled_blocks.append(block)
-        collected += len(block)
-
-    return np.concatenate(sampled_blocks)[:n_observations]
+    rolling_mean = rolling_mean.fillna(fallback_mean)
+    rolling_std = rolling_std.replace(0.0, np.nan).fillna(fallback_std).clip(lower=1e-8)
+    return rolling_mean, rolling_std
 
 
-# Convert sampled simple returns back into simulated close paths.
-def build_simulated_close_paths(start_price, sampled_returns, index):
-    compounded_paths = np.vstack([np.ones(sampled_returns.shape[1]), np.cumprod(1.0 + sampled_returns, axis=0)])
-    simulated_close = start_price * compounded_paths
-    columns = [f"path_{path_id:04d}" for path_id in range(1, sampled_returns.shape[1] + 1)]
+# Convert simulated log returns into synthetic close paths.
+def build_simulated_close_paths(start_price, simulated_log_returns, index):
+    cumulative_log_returns = np.vstack(
+        [np.zeros(simulated_log_returns.shape[1]), np.cumsum(simulated_log_returns, axis=0)]
+    )
+    simulated_close = start_price * np.exp(cumulative_log_returns)
+    columns = [f"path_{path_id:04d}" for path_id in range(1, simulated_log_returns.shape[1] + 1)]
     return pd.DataFrame(simulated_close, index=index, columns=columns)
 
 
-# Bootstrap historical simple returns with contiguous time blocks so local regimes are preserved better.
+# Stabilize a covariance matrix before drawing multivariate normal shocks.
+def stabilize_covariance_matrix(covariance_matrix):
+    covariance_matrix = np.nan_to_num(covariance_matrix, nan=0.0, posinf=0.0, neginf=0.0)
+    covariance_matrix = (covariance_matrix + covariance_matrix.T) / 2.0
+    eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
+    eigenvalues = np.clip(eigenvalues, 1e-12, None)
+    return eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
+
+
+# Simulate one-sleeve paths from rolling log-return mean and volatility estimates.
+def simulate_single_gbm_paths(series, n_paths, rng, block_length):
+    series = pd.Series(series, copy=False).astype(float).dropna()
+    log_returns = np.log(series / series.shift(1)).dropna()
+
+    if log_returns.empty:
+        raise ValueError("Not enough price history to generate Monte Carlo paths.")
+
+    window = infer_block_length(len(log_returns)) if block_length is None else block_length
+    rolling_mean, rolling_std = prepare_rolling_gbm_parameters(log_returns, window)
+    simulated_log_returns = rng.normal(
+        loc=rolling_mean.to_numpy()[:, None],
+        scale=rolling_std.to_numpy()[:, None],
+        size=(len(log_returns), n_paths),
+    )
+    return build_simulated_close_paths(series.iloc[0], simulated_log_returns, series.index)
+
+
+# Simulate basket paths from rolling mean/volatility estimates plus a fixed historical correlation structure.
+def simulate_multi_asset_gbm_paths(close_map, n_paths, rng, block_length):
+    close_map = {
+        symbol: pd.Series(series, copy=False).astype(float).dropna()
+        for symbol, series in close_map.items()
+    }
+    native_indexes = {symbol: series.index for symbol, series in close_map.items()}
+
+    union_index = pd.DatetimeIndex(sorted(set().union(*native_indexes.values())))
+    aligned_close = pd.DataFrame(index=union_index)
+    for symbol, series in close_map.items():
+        aligned_close[symbol] = series.reindex(union_index).ffill()
+
+    aligned_log_returns = np.log(aligned_close / aligned_close.shift(1)).fillna(0.0)
+    aligned_log_returns = aligned_log_returns.iloc[1:]
+
+    if aligned_log_returns.empty:
+        raise ValueError("Not enough price history to generate Monte Carlo paths.")
+
+    window = infer_block_length(len(aligned_log_returns)) if block_length is None else block_length
+    rolling_mean = pd.DataFrame(index=aligned_log_returns.index, columns=aligned_log_returns.columns, dtype=float)
+    rolling_std = pd.DataFrame(index=aligned_log_returns.index, columns=aligned_log_returns.columns, dtype=float)
+
+    for symbol in aligned_log_returns.columns:
+        symbol_mean, symbol_std = prepare_rolling_gbm_parameters(aligned_log_returns[symbol], window)
+        rolling_mean[symbol] = symbol_mean
+        rolling_std[symbol] = symbol_std
+
+    correlation_matrix = aligned_log_returns.corr().fillna(0.0).copy()
+    correlation_array = correlation_matrix.to_numpy(copy=True)
+    np.fill_diagonal(correlation_array, 1.0)
+
+    simulated_log_returns = np.zeros((len(aligned_log_returns), len(aligned_log_returns.columns), n_paths))
+
+    for step_number, timestamp in enumerate(aligned_log_returns.index):
+        mean_vector = rolling_mean.loc[timestamp].to_numpy(dtype=float)
+        std_vector = rolling_std.loc[timestamp].to_numpy(dtype=float)
+        covariance_matrix = np.outer(std_vector, std_vector) * correlation_array
+        covariance_matrix = stabilize_covariance_matrix(covariance_matrix)
+        draws = rng.multivariate_normal(mean=mean_vector, cov=covariance_matrix, size=n_paths)
+        simulated_log_returns[step_number] = draws.T
+
+    simulated_paths = {}
+    for column_number, symbol in enumerate(aligned_close.columns):
+        base_price = close_map[symbol].iloc[0]
+        native_index = native_indexes[symbol]
+        start_location = union_index.get_loc(native_index[0])
+        symbol_log_returns = simulated_log_returns[start_location:, column_number, :]
+        symbol_index = union_index[start_location:]
+        symbol_close = build_simulated_close_paths(base_price, symbol_log_returns, symbol_index)
+        simulated_paths[symbol] = symbol_close.loc[native_index]
+
+    return simulated_paths
+
+
+# Simulate synthetic close paths from rolling GBM parameters estimated on history.
 def generate_monte_carlo_paths(close, n_paths=250, seed=None, block_length=None):
     rng = np.random.default_rng(seed)
 
     if isinstance(close, pd.Series):
-        series = pd.Series(close, copy=False).astype(float).dropna()
-        simple_returns = series.pct_change().dropna()
-
-        if simple_returns.empty:
-            raise ValueError("Not enough price history to generate Monte Carlo paths.")
-
-        block_length = infer_block_length(len(simple_returns)) if block_length is None else block_length
-        sampled_returns = np.column_stack(
-            [
-                sample_block_bootstrap_returns(simple_returns.to_numpy(), block_length, rng)
-                for _ in range(n_paths)
-            ]
-        )
-        return build_simulated_close_paths(series.iloc[0], sampled_returns, series.index)
+        return simulate_single_gbm_paths(close, n_paths=n_paths, rng=rng, block_length=block_length)
 
     if isinstance(close, dict):
-        close_map = {
-            symbol: pd.Series(series, copy=False).astype(float).dropna()
-            for symbol, series in close.items()
-        }
-        native_indexes = {symbol: series.index for symbol, series in close_map.items()}
-
-        aligned_close = pd.DataFrame(index=sorted(set().union(*native_indexes.values())))
-        for symbol, series in close_map.items():
-            aligned_close[symbol] = series.reindex(aligned_close.index).ffill()
-
-        aligned_returns = aligned_close.pct_change().fillna(0.0)
-
-        if len(aligned_returns) <= 1:
-            raise ValueError("Not enough price history to generate Monte Carlo paths.")
-
-        sampled_matrix = aligned_returns.iloc[1:].to_numpy()
-        block_length = infer_block_length(len(sampled_matrix)) if block_length is None else block_length
-
-        simulated_return_paths = []
-        for _ in range(n_paths):
-            simulated_return_paths.append(
-                sample_block_bootstrap_returns(sampled_matrix, block_length, rng)
-            )
-
-        simulated_return_paths = np.stack(simulated_return_paths, axis=2)
-        simulated_paths = {}
-
-        for column_number, symbol in enumerate(aligned_close.columns):
-            symbol_returns = simulated_return_paths[:, column_number, :]
-            base_price = aligned_close[symbol].dropna().iloc[0]
-            symbol_close = build_simulated_close_paths(
-                base_price,
-                symbol_returns,
-                aligned_close.index,
-            )
-            native_index = native_indexes[symbol]
-            symbol_close = symbol_close.loc[native_index]
-            simulated_paths[symbol] = symbol_close
-
-        return simulated_paths
+        return simulate_multi_asset_gbm_paths(close, n_paths=n_paths, rng=rng, block_length=block_length)
 
     frame = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
     close_map = {symbol: frame[symbol].dropna() for symbol in frame.columns}
-    return generate_monte_carlo_paths(close_map, n_paths=n_paths, seed=seed, block_length=block_length)
+    return simulate_multi_asset_gbm_paths(close_map, n_paths=n_paths, rng=rng, block_length=block_length)
 
 
 # Aggregate Monte Carlo path metrics and attach a confidence interval for the mean estimate.

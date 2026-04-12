@@ -91,7 +91,7 @@ Main functions:
   Merges already-built sleeves on the union of timestamps and creates the total portfolio path.
 
 - `generate_monte_carlo_paths(...)`
-  Builds synthetic close paths by resampling contiguous blocks of historical simple returns.
+  Builds synthetic close paths from rolling GBM-style mean and volatility estimates taken from historical log returns.
 
 - `calculate_monte_carlo_performance(...)`
   Re-runs the evaluator on each synthetic path and aggregates the results.
@@ -131,7 +131,7 @@ Main methods:
   Runs the historical backtest using the strategy parameters passed to that call.
 
 - `run_monte_carlo(...)`
-  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional block length for the bootstrap.
+  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional rolling estimation window.
 
 - `plot_wealth()`
   Plots the real wealth curve.
@@ -264,8 +264,8 @@ Interpretation of `yearly_factor`:
 The Monte Carlo module does not use the single realized path directly.
 
 Instead it:
-- takes the historical simple return history
-- resamples contiguous return blocks
+- estimates rolling log-return mean and volatility from history
+- simulates new log returns from those time-varying parameters
 - rebuilds synthetic close paths
 - reruns the strategy on each path
 - aggregates the resulting metrics
@@ -282,14 +282,14 @@ So Monte Carlo stays aligned with the real backtest architecture:
 - sleeve first
 - merge later
 
-The bootstrap method is intentionally closer to market reality than an iid daily shuffle:
-- short local trends are preserved inside each sampled block
-- volatility clusters are preserved inside each sampled block
-- nearby observations stay together instead of being completely reordered
+The Monte Carlo generator is built to stay closer to market structure than an iid daily shuffle:
+- local drift is estimated from rolling historical log returns
+- local volatility is estimated from rolling historical log returns
+- basket simulations use a fixed historical correlation structure across sleeves while allowing volatility to vary through time
 
 An optional `block_length` can be passed to `run_monte_carlo(...)`:
-- smaller blocks create more randomness
-- larger blocks preserve more local regime structure
+- smaller values react faster to local changes in drift and volatility
+- larger values smooth the parameter estimates more strongly
 - if `block_length` is not provided, the code chooses one automatically from the sample size
 
 ### Confidence Intervals

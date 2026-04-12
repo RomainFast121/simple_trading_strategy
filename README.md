@@ -197,6 +197,8 @@ For each sleeve, the momentum logic is built in this order:
 9. Deduct fees from sleeve turnover.
 10. Compound the sleeve net returns into the sleeve wealth curve.
 
+Here, `position` is the portfolio exposure applied to the asset return at each step.
+
 ## Sleeve-First Construction Rule
 
 This is a core design rule of the repository.

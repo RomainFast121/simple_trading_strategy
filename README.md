@@ -88,7 +88,7 @@ Main functions:
   Takes a sleeve return series plus a sleeve position series and computes sleeve-level turnover, fees, net returns, wealth, drawdown, and summary metrics.
 
 - `calculate_buy_and_hold_baseline(...)`
-  Builds a historical equal-capital buy-and-hold benchmark on the same close inputs used by the strategy.
+  Builds a historical B&H benchmark on the same close inputs used by the strategy, using the same target-vol scaling, fee treatment, and basket merge rules.
 
 - `combine_sleeve_frames(...)`
   Merges already-built sleeves on the union of timestamps and creates the total portfolio path.
@@ -131,16 +131,16 @@ Main methods:
   Builds every sleeve independently, then merges them into one portfolio only after the sleeve-local work is complete.
 
 - `run()`
-  Runs the historical backtest using the strategy parameters passed to that call and adds buy-and-hold yearly factor and max drawdown to the summary.
+  Runs the historical backtest using the strategy parameters passed to that call and adds `B&H_yearly_factor` and `B&H_max_drawdown` to the summary.
 
 - `run_monte_carlo(...)`
-  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional rolling estimation window, and appends the historical buy-and-hold yearly factor and max drawdown to the Monte Carlo summary.
+  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional rolling estimation window, and appends the historical `B&H_yearly_factor` and `B&H_max_drawdown` to the Monte Carlo summary.
 
 - `plot_wealth()`
-  Plots the real wealth curve with the historical buy-and-hold benchmark.
+  Plots the real wealth curve with the historical B&H benchmark and drawdown rectangles for both curves.
 
 - `plot_monte_carlo()`
-  Plots the Monte Carlo wealth spread with the historical buy-and-hold benchmark.
+  Plots the Monte Carlo wealth spread with the historical B&H benchmark.
 
 ## Import Logic
 
@@ -202,6 +202,35 @@ For each sleeve, the momentum logic is built in this order:
 
 Here, `position` is the portfolio exposure applied to the asset return at each step.
 
+## B&H Comparison
+
+The B&H comparison is built to stay comparable to the strategy rather than acting as an unscaled passive price chart.
+
+For each sleeve, the benchmark:
+
+1. Uses the same close series as the strategy.
+2. Computes the same rolling recent volatility estimate.
+3. Sets the sleeve exposure to:
+   `target_vol / recent_vol`
+4. Keeps that sleeve long at all times once the volatility estimate is available.
+5. Applies the same turnover and fee logic when the target-vol exposure changes through time.
+
+For baskets, the benchmark follows the same portfolio merge logic as the strategy:
+- each sleeve is built first on its own native calendar
+- sleeves are merged only afterward
+- active sleeves are scaled by `1 / active_sleeves_t`
+- stock sleeves can stay active through weekends with zero return while their market is closed
+
+So the strategy and B&H comparison share:
+- the same target volatility
+- the same fee mechanics
+- the same basket weighting logic
+- the same calendar merge rules
+
+The difference is only the exposure rule:
+- the strategy uses the momentum signal
+- B&H stays long
+
 ## Sleeve-First Construction Rule
 
 This is a core design rule of the repository.
@@ -250,8 +279,10 @@ Forward-fill happens only at this portfolio stage.
 The summary includes:
 
 - `yearly_factor`: geometric annual return factor implied by the full compounded wealth path
+- `B&H_yearly_factor`: geometric annual return factor of the comparable B&H benchmark
 - `total_fees`: total fee cost paid by the strategy
 - `max_drawdown`: worst peak-to-trough decline of the wealth curve
+- `B&H_max_drawdown`: worst peak-to-trough decline of the comparable B&H benchmark
 - `winrate`: share of profitable active periods
 - `average_return_factor`: geometric average return factor during active periods
 - `sharpe_ratio_annualized`: annualized Sharpe based on normal net returns, with flat periods counted as zero return

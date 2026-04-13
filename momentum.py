@@ -260,6 +260,19 @@ class MomentumStrategy:
         baseline_data, baseline_summary = calculate_buy_and_hold_baseline(
             close_source=self._monte_carlo_close_input(),
             init_amount=self.init_amount,
+            target_vol=self.target_vol,
+            vol_window=self.vol_window,
+            fees=self.fees,
+            summary_meta={
+                "ticker": self.ticker_label,
+                "start": pd.to_datetime(self.start),
+                "end": pd.to_datetime(self.end),
+                "tf": self.tf,
+                "fees": self.fees,
+                "target_vol": self.target_vol,
+                "hour": self.hour,
+                "hour_timezone": self.hour_timezone,
+            },
         )
         self.buy_and_hold_data = baseline_data
         self.buy_and_hold_summary = baseline_summary
@@ -577,8 +590,8 @@ class MomentumStrategy:
         self.monte_carlo_path_summaries = best_results["path_summaries"]
         self.monte_carlo_summary = best_results["summary"].copy()
         _, baseline_summary = self._update_buy_and_hold_baseline()
-        self.monte_carlo_summary["buy_and_hold_yearly_factor"] = baseline_summary["yearly_factor"]
-        self.monte_carlo_summary["buy_and_hold_max_drawdown"] = baseline_summary["max_drawdown"]
+        self.monte_carlo_summary["B&H_yearly_factor"] = baseline_summary["yearly_factor"]
+        self.monte_carlo_summary["B&H_max_drawdown"] = baseline_summary["max_drawdown"]
         self.monte_carlo_summary["selected_block_length"] = best_length
         self.monte_carlo_summary["search_n_paths"] = search_n_paths
 
@@ -609,8 +622,8 @@ class MomentumStrategy:
 
         self.data, self.summary = self._evaluate_close_series(self.raw_data)
         _, baseline_summary = self._update_buy_and_hold_baseline()
-        self.summary["buy_and_hold_yearly_factor"] = baseline_summary["yearly_factor"]
-        self.summary["buy_and_hold_max_drawdown"] = baseline_summary["max_drawdown"]
+        self.summary["B&H_yearly_factor"] = baseline_summary["yearly_factor"]
+        self.summary["B&H_max_drawdown"] = baseline_summary["max_drawdown"]
         return self.data
 
     # Run a bootstrap Monte Carlo on historical returns and summarize average metrics with confidence intervals.
@@ -651,8 +664,8 @@ class MomentumStrategy:
         self.monte_carlo_path_summaries = monte_carlo_results["path_summaries"]
         self.monte_carlo_summary = monte_carlo_results["summary"]
         _, baseline_summary = self._update_buy_and_hold_baseline()
-        self.monte_carlo_summary["buy_and_hold_yearly_factor"] = baseline_summary["yearly_factor"]
-        self.monte_carlo_summary["buy_and_hold_max_drawdown"] = baseline_summary["max_drawdown"]
+        self.monte_carlo_summary["B&H_yearly_factor"] = baseline_summary["yearly_factor"]
+        self.monte_carlo_summary["B&H_max_drawdown"] = baseline_summary["max_drawdown"]
         return self.monte_carlo_summary
 
     # Plot the wealth curve of the real backtest using total portfolio wealth when several sleeves are used.
@@ -665,12 +678,18 @@ class MomentumStrategy:
             if isinstance(self.data.columns, pd.MultiIndex)
             else self.data["wealth"]
         )
+        benchmark_wealth = (
+            self.buy_and_hold_data["portfolio"]["wealth"]
+            if isinstance(self.buy_and_hold_data, pd.DataFrame)
+            and isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
+            else self.buy_and_hold_data.get("wealth")
+        )
         return plot_wealth(
             wealth,
             title=f"{self.ticker_label} Momentum Strategy Wealth",
             log_scale=True,
-            benchmark_wealth=self.buy_and_hold_data.get("wealth"),
-            benchmark_label="buy_and_hold",
+            benchmark_wealth=benchmark_wealth,
+            benchmark_label="B&H",
         )
 
     # Plot the spread of Monte Carlo wealth paths together with the mean path and 95% envelope.
@@ -678,10 +697,16 @@ class MomentumStrategy:
         if self.monte_carlo_wealth.empty:
             self.run_monte_carlo()
 
+        benchmark_wealth = (
+            self.buy_and_hold_data["portfolio"]["wealth"]
+            if isinstance(self.buy_and_hold_data, pd.DataFrame)
+            and isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
+            else self.buy_and_hold_data.get("wealth")
+        )
         return plot_monte_carlo_wealth(
             self.monte_carlo_wealth,
             title=f"{self.ticker_label} Momentum Strategy Monte Carlo Wealth",
             log_scale=True,
-            benchmark_wealth=self.buy_and_hold_data.get("wealth"),
-            benchmark_label="historical buy_and_hold",
+            benchmark_wealth=benchmark_wealth,
+            benchmark_label="B&H",
         )

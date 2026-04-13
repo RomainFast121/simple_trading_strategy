@@ -382,8 +382,34 @@ def summarize_wealth_curve(init_amount, wealth):
     }
 
 
-# Compute an equal-capital buy-and-hold baseline for one sleeve or a basket of sleeves.
-def calculate_buy_and_hold_baseline(close_source, init_amount):
+# Build one buy-and-hold sleeve with constant long exposure and target-vol scaling.
+def _build_buy_and_hold_sleeve(close, target_vol, vol_window):
+    close = pd.Series(close, copy=False).astype(float).dropna()
+
+    frame = pd.DataFrame(index=close.index)
+    frame["close"] = close
+    frame["return"] = frame["close"].pct_change()
+    frame["log_return"] = np.log(frame["close"] / frame["close"].shift(1))
+    frame["signal"] = 1.0
+    frame["recent_vol"] = rolling_annualized_vol(
+        frame["log_return"],
+        window=vol_window,
+        min_periods=vol_window,
+    )
+    frame["position"] = frame["signal"] * (target_vol / frame["recent_vol"])
+    frame.loc[~np.isfinite(frame["position"]), "position"] = np.nan
+    return frame
+
+
+# Compute a target-vol buy-and-hold baseline that follows the same sleeve and fee mechanics as the strategy.
+def calculate_buy_and_hold_baseline(
+    close_source,
+    init_amount,
+    target_vol,
+    vol_window,
+    fees=0.0005,
+    summary_meta=None,
+):
     if isinstance(close_source, pd.Series):
         close_map = {"asset": pd.Series(close_source, copy=False).astype(float).dropna()}
     elif isinstance(close_source, dict):
@@ -398,25 +424,84 @@ def calculate_buy_and_hold_baseline(close_source, init_amount):
     if not close_map:
         raise ValueError("No close data available for buy-and-hold baseline.")
 
-    union_index = pd.DatetimeIndex(
-        sorted(set().union(*[series.index for series in close_map.values()]))
+    baseline_meta = dict(summary_meta or {})
+
+    if len(close_map) == 1:
+        ticker_name = next(iter(close_map))
+        sleeve_frame = _build_buy_and_hold_sleeve(
+            close_map[ticker_name],
+            target_vol=target_vol,
+            vol_window=vol_window,
+        )
+        performance_data, summary = calculate_performance(
+            init_amount=init_amount,
+            returns=sleeve_frame["log_return"],
+            positions=sleeve_frame["position"],
+            fees=fees,
+            log_return=True,
+            summary_meta=baseline_meta,
+        )
+        baseline_frame = sleeve_frame.join(
+            performance_data[
+                [
+                    "position_prev",
+                    "asset_simple_return",
+                    "asset_log_return",
+                    "gross_strategy_return",
+                    "turnover",
+                    "fee_cost",
+                    "net_strategy_return",
+                    "net_log_return",
+                    "wealth",
+                    "cum_fees",
+                    "running_peak",
+                    "drawdown%",
+                ]
+            ]
+        )
+        return baseline_frame, summary
+
+    sleeve_frames = {}
+    for symbol, close_series in close_map.items():
+        sleeve_frame = _build_buy_and_hold_sleeve(
+            close_series,
+            target_vol=target_vol,
+            vol_window=vol_window,
+        )
+        performance_data, _ = calculate_performance(
+            init_amount=init_amount,
+            returns=sleeve_frame["log_return"],
+            positions=sleeve_frame["position"],
+            fees=fees,
+            log_return=True,
+            summary_meta=baseline_meta,
+        )
+        sleeve_frames[symbol] = sleeve_frame.join(
+            performance_data[
+                [
+                    "position_prev",
+                    "asset_simple_return",
+                    "asset_log_return",
+                    "gross_strategy_return",
+                    "turnover",
+                    "fee_cost",
+                    "net_strategy_return",
+                    "net_log_return",
+                    "wealth",
+                    "cum_fees",
+                    "running_peak",
+                    "drawdown%",
+                ]
+            ]
+        )
+
+    baseline_data, summary = combine_sleeve_frames(
+        sleeve_frames=sleeve_frames,
+        init_amount=init_amount,
+        fees=fees,
+        summary_meta=baseline_meta,
     )
-    allocation = init_amount / len(close_map)
-    wealth_components = {}
-
-    for symbol, series in close_map.items():
-        aligned_close = series.reindex(union_index).ffill()
-        first_valid_index = series.index[0]
-        first_price = series.iloc[0]
-        units = allocation / first_price
-        component_wealth = units * aligned_close
-        component_wealth = component_wealth.where(aligned_close.index >= first_valid_index, 0.0)
-        wealth_components[symbol] = component_wealth
-
-    wealth_components = pd.DataFrame(wealth_components, index=union_index)
-    baseline_wealth = wealth_components.sum(axis=1)
-    baseline_data, baseline_summary = summarize_wealth_curve(init_amount, baseline_wealth)
-    return baseline_data, baseline_summary
+    return baseline_data, summary
 
 
 # Turn asset returns and positions into a full performance dataframe and summary metrics.
@@ -547,7 +632,9 @@ def _max_drawdown_window(wealth):
         return None
 
     peak_time = wealth.loc[:trough_time].idxmax()
-    return peak_time, trough_time
+    peak_wealth = wealth.loc[peak_time]
+    trough_wealth = wealth.loc[trough_time]
+    return peak_time, trough_time, peak_wealth, trough_wealth
 
 
 # Plot a single wealth curve in a seaborn-style chart, with an optional benchmark overlay.
@@ -570,11 +657,14 @@ def plot_wealth(
 
     strategy_drawdown_window = _max_drawdown_window(wealth)
     if strategy_drawdown_window is not None:
-        ax.axvspan(
-            strategy_drawdown_window[0],
-            strategy_drawdown_window[1],
+        peak_time, trough_time, peak_wealth, trough_wealth = strategy_drawdown_window
+        strategy_mask = (wealth.index >= peak_time) & (wealth.index <= trough_time)
+        ax.fill_between(
+            wealth.index[strategy_mask],
+            trough_wealth,
+            peak_wealth,
             color="steelblue",
-            alpha=0.10,
+            alpha=0.12,
             label="strategy max drawdown",
         )
 
@@ -584,16 +674,18 @@ def plot_wealth(
             benchmark,
             label=benchmark_label,
             linewidth=2.0,
-            linestyle="--",
             color="darkorange",
         )
         benchmark_drawdown_window = _max_drawdown_window(benchmark)
         if benchmark_drawdown_window is not None:
-            ax.axvspan(
-                benchmark_drawdown_window[0],
-                benchmark_drawdown_window[1],
+            peak_time, trough_time, peak_wealth, trough_wealth = benchmark_drawdown_window
+            benchmark_mask = (benchmark.index >= peak_time) & (benchmark.index <= trough_time)
+            ax.fill_between(
+                benchmark.index[benchmark_mask],
+                trough_wealth,
+                peak_wealth,
                 color="darkorange",
-                alpha=0.08,
+                alpha=0.10,
                 label=f"{benchmark_label} max drawdown",
             )
 

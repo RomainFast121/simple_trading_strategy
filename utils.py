@@ -534,6 +534,23 @@ def combine_sleeve_frames(sleeve_frames, init_amount, fees, summary_meta=None):
 
 
 # Plot a single wealth curve in a seaborn-style chart, with an optional benchmark overlay.
+def _max_drawdown_window(wealth):
+    wealth = pd.Series(wealth, copy=False).astype(float).dropna()
+    if wealth.empty:
+        return None
+
+    running_peak = wealth.cummax()
+    drawdown = (wealth / running_peak) - 1
+    trough_time = drawdown.idxmin()
+
+    if pd.isna(trough_time) or drawdown.loc[trough_time] >= 0:
+        return None
+
+    peak_time = wealth.loc[:trough_time].idxmax()
+    return peak_time, trough_time
+
+
+# Plot a single wealth curve in a seaborn-style chart, with an optional benchmark overlay.
 def plot_wealth(
     wealth,
     title="Strategy Wealth",
@@ -551,6 +568,16 @@ def plot_wealth(
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(wealth.index, wealth, label="strategy wealth", linewidth=2.0)
 
+    strategy_drawdown_window = _max_drawdown_window(wealth)
+    if strategy_drawdown_window is not None:
+        ax.axvspan(
+            strategy_drawdown_window[0],
+            strategy_drawdown_window[1],
+            color="steelblue",
+            alpha=0.10,
+            label="strategy max drawdown",
+        )
+
     if benchmark is not None and not benchmark.empty:
         ax.plot(
             benchmark.index,
@@ -560,6 +587,15 @@ def plot_wealth(
             linestyle="--",
             color="darkorange",
         )
+        benchmark_drawdown_window = _max_drawdown_window(benchmark)
+        if benchmark_drawdown_window is not None:
+            ax.axvspan(
+                benchmark_drawdown_window[0],
+                benchmark_drawdown_window[1],
+                color="darkorange",
+                alpha=0.08,
+                label=f"{benchmark_label} max drawdown",
+            )
 
     if log_scale:
         ax.set_yscale("log")

@@ -87,20 +87,23 @@ Main functions:
 - `calculate_performance(...)`
   Takes a sleeve return series plus a sleeve position series and computes sleeve-level turnover, fees, net returns, wealth, drawdown, and summary metrics.
 
+- `calculate_buy_and_hold_baseline(...)`
+  Builds a historical equal-capital buy-and-hold benchmark on the same close inputs used by the strategy.
+
 - `combine_sleeve_frames(...)`
   Merges already-built sleeves on the union of timestamps and creates the total portfolio path.
 
 - `generate_monte_carlo_paths(...)`
-  Builds synthetic close paths from rolling GBM-style mean and volatility estimates taken from historical log returns.
+  Builds synthetic close paths from rolling mean and volatility estimates taken from historical log returns, then applies empirical standardized shocks.
 
 - `calculate_monte_carlo_performance(...)`
   Re-runs the evaluator on each synthetic path and aggregates the results.
 
 - `plot_wealth(...)`
-  Plots a single wealth curve.
+  Plots the strategy wealth curve together with an optional buy-and-hold benchmark.
 
 - `plot_monte_carlo_wealth(...)`
-  Plots all Monte Carlo wealth paths, their mean path, and a confidence envelope.
+  Plots all Monte Carlo wealth paths, their mean path, a confidence envelope, and an optional historical buy-and-hold benchmark.
 
 ### `momentum.py`
 
@@ -128,16 +131,16 @@ Main methods:
   Builds every sleeve independently, then merges them into one portfolio only after the sleeve-local work is complete.
 
 - `run()`
-  Runs the historical backtest using the strategy parameters passed to that call.
+  Runs the historical backtest using the strategy parameters passed to that call and adds buy-and-hold yearly factor and max drawdown to the summary.
 
 - `run_monte_carlo(...)`
-  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional rolling estimation window.
+  Runs Monte Carlo on synthetic paths using the strategy parameters passed to that call, with an optional rolling estimation window, and appends the historical buy-and-hold yearly factor and max drawdown to the Monte Carlo summary.
 
 - `plot_wealth()`
-  Plots the real wealth curve.
+  Plots the real wealth curve with the historical buy-and-hold benchmark.
 
 - `plot_monte_carlo()`
-  Plots the Monte Carlo wealth spread.
+  Plots the Monte Carlo wealth spread with the historical buy-and-hold benchmark.
 
 ## Import Logic
 
@@ -265,7 +268,7 @@ The Monte Carlo module does not use the single realized path directly.
 
 Instead it:
 - estimates rolling log-return mean and volatility from history
-- simulates new log returns from those time-varying parameters
+- rescales empirical standardized shocks with those time-varying parameters
 - rebuilds synthetic close paths
 - reruns the strategy on each path
 - aggregates the resulting metrics
@@ -285,7 +288,8 @@ So Monte Carlo stays aligned with the real backtest architecture:
 The Monte Carlo generator is built to stay closer to market structure than an iid daily shuffle:
 - local drift is estimated from rolling historical log returns
 - local volatility is estimated from rolling historical log returns
-- basket simulations use a fixed historical correlation structure across sleeves while allowing volatility to vary through time
+- shock shapes come from empirical standardized residuals rather than a fully synthetic Gaussian draw
+- basket simulations preserve cross-asset shock structure by drawing residual rows jointly across sleeves
 
 An optional `block_length` can be passed to `run_monte_carlo(...)`:
 - smaller values react faster to local changes in drift and volatility

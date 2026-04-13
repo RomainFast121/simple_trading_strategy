@@ -349,6 +349,76 @@ def summarize_returns(init_amount, strategy_returns, fee_cost=None, summary_meta
     return summary_data, pd.DataFrame([summary_values])
 
 
+# Compute wealth-based yearly factor and max drawdown metrics from an existing wealth curve.
+def summarize_wealth_curve(init_amount, wealth):
+    wealth = pd.Series(wealth, copy=False).astype(float).dropna()
+    wealth.index = pd.to_datetime(wealth.index)
+
+    if wealth.empty:
+        raise ValueError("Wealth series is empty.")
+
+    summary_data = pd.DataFrame(index=wealth.index)
+    summary_data["wealth"] = wealth
+    summary_data["running_peak"] = summary_data["wealth"].cummax()
+    summary_data["drawdown%"] = (
+        summary_data["wealth"] / summary_data["running_peak"]
+    ) - 1
+
+    elapsed_years = (
+        (wealth.index[-1] - wealth.index[0]).total_seconds() / (365.25 * 24 * 60 * 60)
+        if len(wealth.index) >= 2
+        else np.nan
+    )
+    final_wealth = summary_data["wealth"].iloc[-1]
+    yearly_factor = (
+        (final_wealth / init_amount) ** (1 / elapsed_years)
+        if pd.notna(elapsed_years) and elapsed_years > 0
+        else np.nan
+    )
+
+    return summary_data, {
+        "yearly_factor": yearly_factor,
+        "max_drawdown": summary_data["drawdown%"].min(),
+    }
+
+
+# Compute an equal-capital buy-and-hold baseline for one sleeve or a basket of sleeves.
+def calculate_buy_and_hold_baseline(close_source, init_amount):
+    if isinstance(close_source, pd.Series):
+        close_map = {"asset": pd.Series(close_source, copy=False).astype(float).dropna()}
+    elif isinstance(close_source, dict):
+        close_map = {
+            symbol: pd.Series(series, copy=False).astype(float).dropna()
+            for symbol, series in close_source.items()
+        }
+    else:
+        frame = pd.DataFrame(close_source, copy=False).astype(float).dropna(how="all")
+        close_map = {symbol: frame[symbol].dropna() for symbol in frame.columns}
+
+    if not close_map:
+        raise ValueError("No close data available for buy-and-hold baseline.")
+
+    union_index = pd.DatetimeIndex(
+        sorted(set().union(*[series.index for series in close_map.values()]))
+    )
+    allocation = init_amount / len(close_map)
+    wealth_components = {}
+
+    for symbol, series in close_map.items():
+        aligned_close = series.reindex(union_index).ffill()
+        first_valid_index = series.index[0]
+        first_price = series.iloc[0]
+        units = allocation / first_price
+        component_wealth = units * aligned_close
+        component_wealth = component_wealth.where(aligned_close.index >= first_valid_index, 0.0)
+        wealth_components[symbol] = component_wealth
+
+    wealth_components = pd.DataFrame(wealth_components, index=union_index)
+    baseline_wealth = wealth_components.sum(axis=1)
+    baseline_data, baseline_summary = summarize_wealth_curve(init_amount, baseline_wealth)
+    return baseline_data, baseline_summary
+
+
 # Turn asset returns and positions into a full performance dataframe and summary metrics.
 def calculate_performance(init_amount, returns, positions, fees=0.0005, log_return=False, summary_meta=None):
     returns = pd.Series(returns, copy=False)
@@ -463,16 +533,33 @@ def combine_sleeve_frames(sleeve_frames, init_amount, fees, summary_meta=None):
     return pd.concat(merged_frames, axis=1), summary
 
 
-# Plot a single wealth curve in a seaborn-style chart.
-def plot_wealth(wealth, title="Strategy Wealth", log_scale=True):
+# Plot a single wealth curve in a seaborn-style chart, with an optional benchmark overlay.
+def plot_wealth(
+    wealth,
+    title="Strategy Wealth",
+    log_scale=True,
+    benchmark_wealth=None,
+    benchmark_label="benchmark",
+):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
     wealth = pd.Series(wealth, copy=False)
+    benchmark = None if benchmark_wealth is None else pd.Series(benchmark_wealth, copy=False)
 
     sns.set_theme(style="darkgrid")
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(wealth.index, wealth, label="wealth")
+    ax.plot(wealth.index, wealth, label="strategy wealth", linewidth=2.0)
+
+    if benchmark is not None and not benchmark.empty:
+        ax.plot(
+            benchmark.index,
+            benchmark,
+            label=benchmark_label,
+            linewidth=2.0,
+            linestyle="--",
+            color="darkorange",
+        )
 
     if log_scale:
         ax.set_yscale("log")
@@ -494,11 +581,37 @@ def infer_block_length(n_observations):
     return max(5, min(n_observations, int(round(np.sqrt(n_observations)))))
 
 
+# Build a sensible grid of candidate estimation windows from the sample length.
+def build_candidate_windows(n_observations):
+    base_candidates = [10, 20, 30, 45, 60, 70, 90, 120, 180, 252]
+    candidates = sorted({window for window in base_candidates if 5 <= window < n_observations})
+
+    if not candidates and n_observations > 5:
+        candidates = [max(5, min(n_observations - 1, infer_block_length(n_observations)))]
+
+    return candidates
+
+
 # Fill rolling mean and volatility estimates so the simulation can start from the first return.
 def prepare_rolling_gbm_parameters(log_returns, window):
     window = max(1, min(int(window), len(log_returns)))
     rolling_mean = log_returns.rolling(window=window, min_periods=window).mean()
     rolling_std = log_returns.rolling(window=window, min_periods=window).std(ddof=1)
+
+    fallback_mean = log_returns.mean()
+    fallback_std = log_returns.std(ddof=1)
+    if not np.isfinite(fallback_std) or fallback_std <= 0:
+        fallback_std = 1e-8
+
+    rolling_mean = rolling_mean.fillna(fallback_mean)
+    rolling_std = rolling_std.replace(0.0, np.nan).fillna(fallback_std).clip(lower=1e-8)
+    return rolling_mean, rolling_std
+
+
+# Compute predictive rolling parameters using only prior information for each return.
+def prepare_predictive_rolling_gbm_parameters(log_returns, window):
+    rolling_mean = log_returns.rolling(window=window, min_periods=window).mean().shift(1)
+    rolling_std = log_returns.rolling(window=window, min_periods=window).std(ddof=1).shift(1)
 
     fallback_mean = log_returns.mean()
     fallback_std = log_returns.std(ddof=1)
@@ -529,6 +642,88 @@ def stabilize_covariance_matrix(covariance_matrix):
     return eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
 
 
+# Score one window on a single series using one-step-ahead Gaussian predictive likelihood.
+def score_single_window(log_returns, window):
+    predictive_mean, predictive_std = prepare_predictive_rolling_gbm_parameters(log_returns, window)
+    variance = predictive_std.pow(2).clip(lower=1e-12)
+    score = -0.5 * (
+        np.log(2 * np.pi * variance) + ((log_returns - predictive_mean) ** 2) / variance
+    )
+    return float(score.replace([np.inf, -np.inf], np.nan).dropna().sum())
+
+
+# Score one window on a basket using multivariate Gaussian predictive likelihood.
+def score_multi_asset_window(log_returns_frame, window):
+    predictive_mean = pd.DataFrame(index=log_returns_frame.index, columns=log_returns_frame.columns, dtype=float)
+    predictive_std = pd.DataFrame(index=log_returns_frame.index, columns=log_returns_frame.columns, dtype=float)
+
+    for symbol in log_returns_frame.columns:
+        symbol_mean, symbol_std = prepare_predictive_rolling_gbm_parameters(log_returns_frame[symbol], window)
+        predictive_mean[symbol] = symbol_mean
+        predictive_std[symbol] = symbol_std
+
+    correlation_matrix = log_returns_frame.corr().fillna(0.0).to_numpy(copy=True)
+    np.fill_diagonal(correlation_matrix, 1.0)
+
+    score = 0.0
+    for step_number in range(len(log_returns_frame)):
+        mean_vector = predictive_mean.iloc[step_number].to_numpy(dtype=float)
+        std_vector = predictive_std.iloc[step_number].to_numpy(dtype=float)
+        covariance_matrix = np.outer(std_vector, std_vector) * correlation_matrix
+        covariance_matrix = stabilize_covariance_matrix(covariance_matrix)
+        observed_vector = log_returns_frame.iloc[step_number].to_numpy(dtype=float)
+        diff = observed_vector - mean_vector
+
+        sign, logdet = np.linalg.slogdet(covariance_matrix)
+        if sign <= 0:
+            continue
+
+        inverse_covariance = np.linalg.inv(covariance_matrix)
+        dimension = len(observed_vector)
+        score += -0.5 * (
+            dimension * np.log(2 * np.pi) + logdet + diff @ inverse_covariance @ diff
+        )
+
+    return float(score)
+
+
+# Select the rolling estimation window from the return process itself.
+def select_monte_carlo_window(close, candidate_windows=None):
+    if isinstance(close, pd.Series):
+        series = pd.Series(close, copy=False).astype(float).dropna()
+        log_returns = np.log(series / series.shift(1)).dropna()
+
+        if len(log_returns) <= 5:
+            return infer_block_length(len(log_returns))
+
+        windows = candidate_windows or build_candidate_windows(len(log_returns))
+        scored_windows = [(window, score_single_window(log_returns, window)) for window in windows]
+        return max(scored_windows, key=lambda item: item[1])[0]
+
+    if isinstance(close, dict):
+        close_map = {
+            symbol: pd.Series(series, copy=False).astype(float).dropna()
+            for symbol, series in close.items()
+        }
+        native_indexes = {symbol: series.index for symbol, series in close_map.items()}
+        union_index = pd.DatetimeIndex(sorted(set().union(*native_indexes.values())))
+        aligned_close = pd.DataFrame(index=union_index)
+        for symbol, series in close_map.items():
+            aligned_close[symbol] = series.reindex(union_index).ffill()
+
+        log_returns_frame = np.log(aligned_close / aligned_close.shift(1)).fillna(0.0).iloc[1:]
+        if len(log_returns_frame) <= 5:
+            return infer_block_length(len(log_returns_frame))
+
+        windows = candidate_windows or build_candidate_windows(len(log_returns_frame))
+        scored_windows = [(window, score_multi_asset_window(log_returns_frame, window)) for window in windows]
+        return max(scored_windows, key=lambda item: item[1])[0]
+
+    frame = pd.DataFrame(close, copy=False).astype(float).dropna(how="all")
+    close_map = {symbol: frame[symbol].dropna() for symbol in frame.columns}
+    return select_monte_carlo_window(close_map, candidate_windows=candidate_windows)
+
+
 # Simulate one-sleeve paths from rolling log-return mean and volatility estimates.
 def simulate_single_gbm_paths(series, n_paths, rng, block_length):
     series = pd.Series(series, copy=False).astype(float).dropna()
@@ -537,7 +732,7 @@ def simulate_single_gbm_paths(series, n_paths, rng, block_length):
     if log_returns.empty:
         raise ValueError("Not enough price history to generate Monte Carlo paths.")
 
-    window = infer_block_length(len(log_returns)) if block_length is None else block_length
+    window = select_monte_carlo_window(series) if block_length is None else block_length
     rolling_mean, rolling_std = prepare_rolling_gbm_parameters(log_returns, window)
     simulated_log_returns = rng.normal(
         loc=rolling_mean.to_numpy()[:, None],
@@ -547,7 +742,7 @@ def simulate_single_gbm_paths(series, n_paths, rng, block_length):
     return build_simulated_close_paths(series.iloc[0], simulated_log_returns, series.index)
 
 
-# Simulate basket paths from rolling mean/volatility estimates plus a fixed historical correlation structure.
+# Simulate basket paths from rolling mean/volatility estimates plus empirical cross-asset residual shocks.
 def simulate_multi_asset_gbm_paths(close_map, n_paths, rng, block_length):
     close_map = {
         symbol: pd.Series(series, copy=False).astype(float).dropna()
@@ -566,7 +761,7 @@ def simulate_multi_asset_gbm_paths(close_map, n_paths, rng, block_length):
     if aligned_log_returns.empty:
         raise ValueError("Not enough price history to generate Monte Carlo paths.")
 
-    window = infer_block_length(len(aligned_log_returns)) if block_length is None else block_length
+    window = select_monte_carlo_window(close_map) if block_length is None else block_length
     rolling_mean = pd.DataFrame(index=aligned_log_returns.index, columns=aligned_log_returns.columns, dtype=float)
     rolling_std = pd.DataFrame(index=aligned_log_returns.index, columns=aligned_log_returns.columns, dtype=float)
 
@@ -575,18 +770,20 @@ def simulate_multi_asset_gbm_paths(close_map, n_paths, rng, block_length):
         rolling_mean[symbol] = symbol_mean
         rolling_std[symbol] = symbol_std
 
-    correlation_matrix = aligned_log_returns.corr().fillna(0.0).copy()
-    correlation_array = correlation_matrix.to_numpy(copy=True)
-    np.fill_diagonal(correlation_array, 1.0)
+    correlation_matrix = aligned_log_returns.corr().fillna(0.0).to_numpy(copy=True)
+    np.fill_diagonal(correlation_matrix, 1.0)
 
     simulated_log_returns = np.zeros((len(aligned_log_returns), len(aligned_log_returns.columns), n_paths))
 
     for step_number, timestamp in enumerate(aligned_log_returns.index):
-        mean_vector = rolling_mean.loc[timestamp].to_numpy(dtype=float)
-        std_vector = rolling_std.loc[timestamp].to_numpy(dtype=float)
-        covariance_matrix = np.outer(std_vector, std_vector) * correlation_array
+        std_vector = rolling_std.iloc[step_number].to_numpy(dtype=float)
+        covariance_matrix = np.outer(std_vector, std_vector) * correlation_matrix
         covariance_matrix = stabilize_covariance_matrix(covariance_matrix)
-        draws = rng.multivariate_normal(mean=mean_vector, cov=covariance_matrix, size=n_paths)
+        draws = rng.multivariate_normal(
+            mean=rolling_mean.loc[timestamp].to_numpy(dtype=float),
+            cov=covariance_matrix,
+            size=n_paths,
+        )
         simulated_log_returns[step_number] = draws.T
 
     simulated_paths = {}
@@ -716,12 +913,19 @@ def calculate_monte_carlo_performance(
     }
 
 
-# Plot the spread of Monte Carlo wealth paths together with the average path and a 95% envelope.
-def plot_monte_carlo_wealth(wealth_paths, title="Monte Carlo Wealth", log_scale=True):
+# Plot the spread of Monte Carlo wealth paths together with the average path, a 95% envelope, and an optional benchmark.
+def plot_monte_carlo_wealth(
+    wealth_paths,
+    title="Monte Carlo Wealth",
+    log_scale=True,
+    benchmark_wealth=None,
+    benchmark_label="benchmark",
+):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
     wealth_paths = pd.DataFrame(wealth_paths, copy=False)
+    benchmark = None if benchmark_wealth is None else pd.Series(benchmark_wealth, copy=False)
 
     if wealth_paths.empty:
         raise ValueError("No Monte Carlo wealth paths available to plot.")
@@ -745,6 +949,16 @@ def plot_monte_carlo_wealth(wealth_paths, title="Monte Carlo Wealth", log_scale=
         label="95% path envelope",
     )
     ax.plot(wealth_paths.index, mean_wealth, color="navy", linewidth=2.0, label="mean wealth")
+
+    if benchmark is not None and not benchmark.empty:
+        ax.plot(
+            benchmark.index,
+            benchmark,
+            color="darkorange",
+            linewidth=2.0,
+            linestyle="--",
+            label=benchmark_label,
+        )
 
     if log_scale:
         ax.set_yscale("log")

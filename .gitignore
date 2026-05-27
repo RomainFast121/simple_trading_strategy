@@ -1,0 +1,8 @@
+*.ipynb
+local_notebooks/
+__pycache__/
+pycache/
+*.pyc
+*.csv
+local_outputs/
+.venv/

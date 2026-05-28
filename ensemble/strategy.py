@@ -7,6 +7,7 @@ import pandas as pd
 
 from utils import (
     calculate_buy_and_hold_baseline,
+    estimate_asset_annualized_volatility,
     estimate_periods_per_year,
     plot_wealth,
     summarize_returns,
@@ -96,11 +97,13 @@ class AssemblingStrategy:
         self.comparison = pd.DataFrame()
         self.common_index = pd.DatetimeIndex([])
         self.active_index = pd.DatetimeIndex([])
+        self.signal_index = pd.DatetimeIndex([])
         self.symbols = []
         self.closes = pd.DataFrame()
         self.component_positions = {}
         self.component_returns = pd.DataFrame()
         self.combined_positions = pd.DataFrame()
+        self.variant_scalers = {}
 
     def _load_strategy_file(self, name, path):
         path = Path(path)
@@ -230,6 +233,7 @@ class AssemblingStrategy:
 
         self.common_index = common_index
         self.active_index = common_index[active_mask.to_numpy()]
+        self.signal_index = self.active_index.copy()
         if self.active_index.empty:
             raise ValueError("No common timestamps are active in every strategy file.")
 
@@ -435,7 +439,7 @@ class AssemblingStrategy:
 
     def _build_volatility_positions(self, asset_returns):
         if self.volatility_window is None:
-            return None, None
+            return None, None, None
 
         window = int(self.volatility_window)
         if window < 2:
@@ -449,8 +453,10 @@ class AssemblingStrategy:
             self.component_returns.rolling(window=window, min_periods=window).std().shift(1)
             * np.sqrt(periods_per_year)
         )
-        inv_vol = 1.0 / component_vol.replace(0.0, np.nan)
-        weights = inv_vol.div(inv_vol.sum(axis=1), axis=0)
+        valid_vol = component_vol.gt(0.0) & np.isfinite(component_vol)
+        inv_vol = (1.0 / component_vol.where(valid_vol)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        inv_sum = inv_vol.sum(axis=1)
+        weights = inv_vol.div(inv_sum.where(inv_sum.gt(0.0)), axis=0).ffill()
 
         raw_positions = pd.DataFrame(0.0, index=self.active_index, columns=self.symbols)
         for name, positions in self.component_positions.items():
@@ -460,12 +466,17 @@ class AssemblingStrategy:
         if self.volatility_target is not None:
             raw_returns = self._portfolio_returns_from_positions(raw_positions.fillna(0.0), asset_returns)[4]
             raw_vol = raw_returns.rolling(window=window, min_periods=window).std().shift(1) * np.sqrt(periods_per_year)
-            scaler = float(self.volatility_target) / raw_vol.replace(0.0, np.nan)
+            valid_raw_vol = raw_vol.gt(0.0) & np.isfinite(raw_vol)
+            scaler = (float(self.volatility_target) / raw_vol.where(valid_raw_vol)).replace(
+                [np.inf, -np.inf],
+                np.nan,
+            ).ffill()
             positions = raw_positions.mul(scaler, axis=0)
         else:
+            scaler = pd.Series(1.0, index=self.active_index)
             positions = raw_positions
 
-        return positions, weights
+        return positions, weights, scaler
 
     def _build_rolling_sharpe_positions(self):
         if self.rolling_sharpe_window is None:
@@ -596,17 +607,22 @@ class AssemblingStrategy:
                 index=self.active_index,
             )
         }
+        self.variant_scalers = {
+            self._variant_label_50_50(): pd.Series(1.0, index=self.active_index)
+        }
 
         asset_returns = self.closes.pct_change().fillna(0.0)
-        volatility_positions, volatility_weights = self._build_volatility_positions(asset_returns)
+        volatility_positions, volatility_weights, volatility_scaler = self._build_volatility_positions(asset_returns)
         if volatility_positions is not None:
             self.variant_positions[self._variant_label_volatility()] = volatility_positions
             self.variant_weights[self._variant_label_volatility()] = volatility_weights
+            self.variant_scalers[self._variant_label_volatility()] = volatility_scaler
 
         rolling_positions, rolling_weights = self._build_rolling_sharpe_positions()
         if rolling_positions is not None:
             self.variant_positions[self._variant_label_rolling_sharpe()] = rolling_positions
             self.variant_weights[self._variant_label_rolling_sharpe()] = rolling_weights
+            self.variant_scalers[self._variant_label_rolling_sharpe()] = pd.Series(1.0, index=self.active_index)
 
         assigned_mask = pd.Series(True, index=self.active_index)
         for positions in self.variant_positions.values():
@@ -628,6 +644,10 @@ class AssemblingStrategy:
             self.variant_weights = {
                 name: method_weights.reindex(self.active_index)
                 for name, method_weights in self.variant_weights.items()
+            }
+            self.variant_scalers = {
+                name: scaler.reindex(self.active_index)
+                for name, scaler in self.variant_scalers.items()
             }
             asset_returns = self.closes.pct_change().fillna(0.0)
 
@@ -686,31 +706,175 @@ class AssemblingStrategy:
             self.run()
         return self.comparison.copy()
 
+    def _latest_xgb_prediction_positions(self, input_data):
+        predictions_path = input_data.path.with_name("predictions.csv")
+        schedule_path = input_data.path.with_name("parameter_schedule.csv")
+        summary_path = input_data.path.with_name("summary.csv")
+        if not predictions_path.exists() or not schedule_path.exists() or not summary_path.exists():
+            return None
+
+        predictions = pd.read_csv(predictions_path)
+        if predictions.empty or not {"timestamp", "SYMBOL", "prediction", "simple_return"}.issubset(predictions.columns):
+            return None
+        predictions["timestamp"] = pd.to_datetime(predictions["timestamp"], utc=True)
+        latest_timestamp = predictions["timestamp"].max()
+        latest = predictions.loc[predictions["timestamp"].eq(latest_timestamp)].copy()
+        latest = latest.loc[latest["SYMBOL"].isin(self.symbols)].copy()
+        if latest.empty:
+            return None
+
+        schedule = pd.read_csv(schedule_path)
+        summary = pd.read_csv(summary_path)
+        if schedule.empty or summary.empty:
+            return None
+
+        last_schedule = schedule.iloc[-1]
+        summary_row = summary.iloc[0]
+        threshold_value = float(last_schedule["applied_threshold_value"])
+        vol_lookback = int(last_schedule["applied_vol_lookback"])
+        target_vol = float(summary_row["target_vol"])
+        leverage_cap = float(summary_row["leverage_cap"])
+
+        volatility_panel = estimate_asset_annualized_volatility(
+            predictions.loc[:, ["timestamp", "SYMBOL", "simple_return"]].copy(),
+            lookback_bars=vol_lookback,
+            return_col="simple_return",
+            output_col="asset_vol_annualized",
+        )
+        latest = latest.merge(
+            volatility_panel.loc[:, ["timestamp", "SYMBOL", "asset_vol_annualized"]],
+            on=["timestamp", "SYMBOL"],
+            how="left",
+        )
+        latest["position"] = 0.0
+        prediction = pd.to_numeric(latest["prediction"], errors="coerce")
+        vol = pd.to_numeric(latest["asset_vol_annualized"], errors="coerce")
+        active = prediction.abs().ge(threshold_value) & prediction.ne(0.0) & vol.gt(0.0)
+        scale = (target_vol / vol.loc[active]).clip(upper=leverage_cap)
+        latest.loc[active, "position"] = np.sign(prediction.loc[active]) * scale
+        active_count = max(int(latest["position"].ne(0.0).sum()), 1)
+        latest["weighted_position"] = latest["position"] / active_count
+        positions = latest.set_index("SYMBOL")["weighted_position"].reindex(self.symbols).fillna(0.0)
+        closes = latest.set_index("SYMBOL")["close"].reindex(self.symbols) if "close" in latest.columns else None
+        return latest_timestamp, positions.astype(float), closes
+
+    def _latest_sidecar_positions(self, input_data):
+        candidates = [
+            input_data.path.with_name(f"{input_data.path.stem}_latest_positions.csv"),
+            input_data.path.with_name(f"{input_data.name}_latest_positions.csv"),
+            input_data.path.with_name("latest_positions.csv"),
+        ]
+        path = next((candidate for candidate in candidates if candidate.exists()), None)
+        if path is None:
+            return None
+
+        frame = pd.read_csv(path)
+        required = {"available_at", "SYMBOL"}
+        if frame.empty or not required.issubset(frame.columns):
+            return None
+        position_column = (
+            "portfolio_weighted_position"
+            if "portfolio_weighted_position" in frame.columns
+            else "position"
+            if "position" in frame.columns
+            else None
+        )
+        if position_column is None:
+            return None
+
+        frame["available_at"] = pd.to_datetime(frame["available_at"], utc=True)
+        latest_timestamp = frame["available_at"].max()
+        latest = frame.loc[frame["available_at"].eq(latest_timestamp)].copy()
+        latest = latest.loc[latest["SYMBOL"].isin(self.symbols)].copy()
+        if latest.empty:
+            return None
+
+        positions = (
+            pd.to_numeric(latest.set_index("SYMBOL")[position_column], errors="coerce")
+            .reindex(self.symbols)
+            .fillna(0.0)
+        )
+        closes = None
+        if "close" in latest.columns:
+            closes = pd.to_numeric(latest.set_index("SYMBOL")["close"], errors="coerce").reindex(self.symbols)
+        return latest_timestamp, positions.astype(float), closes
+
+    def _latest_component_positions(self):
+        latest_components = {}
+        for name, input_data in self.inputs.items():
+            file_timestamp = input_data.active[input_data.active].index.max()
+            positions = input_data.positions.reindex([file_timestamp])[self.symbols].iloc[0].astype(float)
+            closes = input_data.closes.reindex([file_timestamp])[self.symbols].iloc[0].astype(float)
+
+            sidecar = self._latest_sidecar_positions(input_data)
+            if sidecar is not None:
+                sidecar_timestamp, sidecar_positions, sidecar_closes = sidecar
+                if pd.Timestamp(sidecar_timestamp) > pd.Timestamp(file_timestamp):
+                    file_timestamp = sidecar_timestamp
+                    positions = sidecar_positions
+                    if sidecar_closes is not None:
+                        closes = sidecar_closes.astype(float)
+
+            if "xgb" in name.lower():
+                live = self._latest_xgb_prediction_positions(input_data)
+                if live is not None:
+                    live_timestamp, live_positions, live_closes = live
+                    if pd.Timestamp(live_timestamp) > pd.Timestamp(file_timestamp):
+                        file_timestamp = live_timestamp
+                        positions = live_positions
+                        if live_closes is not None:
+                            closes = live_closes.astype(float)
+
+            latest_components[name] = {
+                "available_at": pd.Timestamp(file_timestamp),
+                "positions": positions,
+                "closes": closes,
+            }
+        return latest_components
+
     def latest_positions(self):
         if self.data.empty:
             self.run()
 
-        timestamp = self.active_index[-1]
         rows = []
-        for symbol in self.symbols:
+        latest_components = self._latest_component_positions()
+        latest_component_positions = {
+            name: data["positions"]
+            for name, data in latest_components.items()
+        }
+
+        for name, positions in latest_component_positions.items():
             row = {
-                "available_at": timestamp,
+                "available_at": latest_components[name]["available_at"],
                 "applies_to": "next_bar",
-                "SYMBOL": symbol,
-                "close": self.closes.loc[timestamp, symbol],
+                "strategy": name,
             }
-            for name, positions in self.component_positions.items():
-                row[f"{name}_position"] = positions.loc[timestamp, symbol]
-            for label, positions in self.variant_positions.items():
-                column = label.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
-                position = positions.loc[timestamp, symbol]
-                row[f"{column}_position"] = position
-                row[f"{column}_signal_side"] = (
-                    "long" if position > 0 else "short" if position < 0 else "flat"
-                )
+            for symbol in self.symbols:
+                row[symbol] = positions.loc[symbol]
             rows.append(row)
 
-        return pd.DataFrame(rows).sort_values("SYMBOL").reset_index(drop=True)
+        ensemble_timestamp = min(data["available_at"] for data in latest_components.values())
+        for label, weights in self.variant_weights.items():
+            usable_weights = weights.dropna(how="any")
+            if usable_weights.empty:
+                continue
+            latest_weights = usable_weights.iloc[-1]
+            scaler_series = self.variant_scalers.get(label, pd.Series(1.0, index=self.active_index)).dropna()
+            scaler = float(scaler_series.iloc[-1]) if not scaler_series.empty else 1.0
+
+            row = {
+                "available_at": ensemble_timestamp,
+                "applies_to": "next_bar",
+                "strategy": label,
+            }
+            for symbol in self.symbols:
+                position = 0.0
+                for component_name, component_position in latest_component_positions.items():
+                    position += float(latest_weights.loc[component_name]) * float(component_position.loc[symbol])
+                row[symbol] = position * scaler
+            rows.append(row)
+
+        return pd.DataFrame(rows).reset_index(drop=True)
 
     def plot_wealth(self, include_components=True):
         if self.data.empty:

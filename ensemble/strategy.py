@@ -9,6 +9,7 @@ from utils import (
     calculate_buy_and_hold_baseline,
     estimate_asset_annualized_volatility,
     estimate_periods_per_year,
+    format_log_wealth_axis,
     plot_wealth,
     summarize_returns,
 )
@@ -60,6 +61,7 @@ class AssemblingStrategy:
         init_amount=1000,
         benchmark_target_vol=None,
         benchmark_vol_window=None,
+        assembled_target_vol=None,
         volatility_target=None,
         volatility_window=None,
         rolling_sharpe_window=None,
@@ -77,6 +79,7 @@ class AssemblingStrategy:
         self.init_amount = init_amount
         self.benchmark_target_vol = benchmark_target_vol
         self.benchmark_vol_window = benchmark_vol_window
+        self.assembled_target_vol = assembled_target_vol
         self.volatility_target = volatility_target
         self.volatility_window = volatility_window
         self.rolling_sharpe_window = rolling_sharpe_window
@@ -463,20 +466,38 @@ class AssemblingStrategy:
             raw_positions = raw_positions.add(positions.mul(weights[name], axis=0), fill_value=0.0)
         raw_positions = raw_positions.where(weights.notna().all(axis=1), np.nan)
 
-        if self.volatility_target is not None:
-            raw_returns = self._portfolio_returns_from_positions(raw_positions.fillna(0.0), asset_returns)[4]
-            raw_vol = raw_returns.rolling(window=window, min_periods=window).std().shift(1) * np.sqrt(periods_per_year)
-            valid_raw_vol = raw_vol.gt(0.0) & np.isfinite(raw_vol)
-            scaler = (float(self.volatility_target) / raw_vol.where(valid_raw_vol)).replace(
-                [np.inf, -np.inf],
-                np.nan,
-            ).ffill()
-            positions = raw_positions.mul(scaler, axis=0)
-        else:
-            scaler = pd.Series(1.0, index=self.active_index)
-            positions = raw_positions
-
+        positions, scaler = self._scale_positions_to_target_vol(
+            raw_positions,
+            asset_returns,
+            target_vol=self.volatility_target,
+            window=window,
+        )
         return positions, weights, scaler
+
+    def _scale_positions_to_target_vol(self, positions, asset_returns, *, target_vol, window=None):
+        if target_vol is None:
+            return positions, pd.Series(1.0, index=self.active_index)
+
+        if window is None:
+            window = self.volatility_window
+        if window is None:
+            raise ValueError("A volatility window is required when using target-vol scaling.")
+        window = int(window)
+        if window < 2:
+            raise ValueError("volatility target window must be at least 2.")
+
+        periods_per_year = estimate_periods_per_year(self.active_index)
+        if not np.isfinite(periods_per_year):
+            raise ValueError("Not enough timestamps to annualize volatility.")
+
+        raw_returns = self._portfolio_returns_from_positions(positions.fillna(0.0), asset_returns)[4]
+        raw_vol = raw_returns.rolling(window=window, min_periods=window).std().shift(1) * np.sqrt(periods_per_year)
+        valid_raw_vol = raw_vol.gt(0.0) & np.isfinite(raw_vol)
+        scaler = (float(target_vol) / raw_vol.where(valid_raw_vol)).replace(
+            [np.inf, -np.inf],
+            np.nan,
+        ).ffill()
+        return positions.mul(scaler, axis=0), scaler
 
     def _build_rolling_sharpe_positions(self):
         if self.rolling_sharpe_window is None:
@@ -599,7 +620,15 @@ class AssemblingStrategy:
 
         self._build_component_returns()
 
+        asset_returns = self.closes.pct_change().fillna(0.0)
+
         base_positions = self._combine_positions(self.component_positions, weights)
+        base_positions, base_scaler = self._scale_positions_to_target_vol(
+            base_positions,
+            asset_returns,
+            target_vol=self.assembled_target_vol,
+            window=self.volatility_window,
+        )
         self.variant_positions = {self._variant_label_50_50(): base_positions}
         self.variant_weights = {
             self._variant_label_50_50(): pd.DataFrame(
@@ -608,10 +637,9 @@ class AssemblingStrategy:
             )
         }
         self.variant_scalers = {
-            self._variant_label_50_50(): pd.Series(1.0, index=self.active_index)
+            self._variant_label_50_50(): base_scaler
         }
 
-        asset_returns = self.closes.pct_change().fillna(0.0)
         volatility_positions, volatility_weights, volatility_scaler = self._build_volatility_positions(asset_returns)
         if volatility_positions is not None:
             self.variant_positions[self._variant_label_volatility()] = volatility_positions
@@ -620,9 +648,15 @@ class AssemblingStrategy:
 
         rolling_positions, rolling_weights = self._build_rolling_sharpe_positions()
         if rolling_positions is not None:
+            rolling_positions, rolling_scaler = self._scale_positions_to_target_vol(
+                rolling_positions,
+                asset_returns,
+                target_vol=self.assembled_target_vol,
+                window=self.volatility_window,
+            )
             self.variant_positions[self._variant_label_rolling_sharpe()] = rolling_positions
             self.variant_weights[self._variant_label_rolling_sharpe()] = rolling_weights
-            self.variant_scalers[self._variant_label_rolling_sharpe()] = pd.Series(1.0, index=self.active_index)
+            self.variant_scalers[self._variant_label_rolling_sharpe()] = rolling_scaler
 
         assigned_mask = pd.Series(True, index=self.active_index)
         for positions in self.variant_positions.values():
@@ -923,6 +957,7 @@ class AssemblingStrategy:
             )
 
         ax.set_yscale("log")
+        format_log_wealth_axis(ax)
         ax.set_title("Equity curves comparison")
         ax.set_xlabel("Date")
         ax.set_ylabel("Wealth")

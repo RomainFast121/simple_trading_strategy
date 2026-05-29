@@ -4,6 +4,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from utils import format_log_wealth_axis
+
 
 FEATURE_GROUPS = {
     "lagged_returns": [
@@ -165,20 +167,30 @@ def plot_prediction_scatter(frame, path, prediction_col="prediction", target_col
 def plot_equity_comparison(strategy, path):
     _prepare_matplotlib(path)
     import matplotlib.pyplot as plt
+    import seaborn as sns
 
     xgb_wealth = pd.to_numeric(_portfolio_series(strategy.data, "wealth"), errors="coerce").dropna()
     bh_wealth = pd.to_numeric(_portfolio_series(strategy.buy_and_hold_data, "wealth"), errors="coerce").dropna()
-    fig, ax = plt.subplots(figsize=(9, 4.5))
+
+    sns.set_theme(style="darkgrid")
+    fig, ax = plt.subplots(figsize=(12, 6))
     if xgb_wealth.empty and bh_wealth.empty:
         ax.text(0.5, 0.5, "No equity curves", ha="center", va="center", transform=ax.transAxes)
-    if not xgb_wealth.empty:
-        ax.plot(xgb_wealth.index, xgb_wealth / xgb_wealth.iloc[0], label="XGB")
-    if not bh_wealth.empty:
-        ax.plot(bh_wealth.index, bh_wealth / bh_wealth.iloc[0], label="B&H equal weight")
-    ax.set_title("Equity curves")
-    ax.set_xlabel("timestamp")
-    ax.set_ylabel("normalized wealth")
-    ax.legend(loc="upper left")
+    else:
+        if not xgb_wealth.empty and not bh_wealth.empty:
+            end = min(xgb_wealth.index.max(), bh_wealth.index.max())
+            xgb_wealth = xgb_wealth.loc[:end]
+            bh_wealth = bh_wealth.loc[:end]
+        if not xgb_wealth.empty:
+            ax.plot(xgb_wealth.index, xgb_wealth, label="XGB", linewidth=1.8, alpha=0.9)
+        if not bh_wealth.empty:
+            ax.plot(bh_wealth.index, bh_wealth, label="B&H", linewidth=1.8, alpha=0.85)
+        ax.set_yscale("log")
+        format_log_wealth_axis(ax)
+        ax.legend(loc="upper left")
+    ax.set_title("Equity curves comparison")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Wealth")
     _format_date_axis(ax)
     fig.tight_layout()
     fig.savefig(path)
@@ -188,9 +200,11 @@ def plot_equity_comparison(strategy, path):
 def plot_combined_diagnostics(strategy, path):
     _prepare_matplotlib(path)
     import matplotlib.pyplot as plt
+    import seaborn as sns
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    sns.set_theme(style="darkgrid")
     fig, axes = plt.subplots(2, 2, figsize=(14, 9), constrained_layout=True)
 
     returns = pd.to_numeric(
@@ -250,13 +264,15 @@ def plot_combined_diagnostics(strategy, path):
             xgb_wealth = xgb_wealth.loc[:end]
             bh_wealth = bh_wealth.loc[:end]
         if not xgb_wealth.empty:
-            ax.plot(xgb_wealth.index, xgb_wealth / xgb_wealth.iloc[0], label="XGB")
+            ax.plot(xgb_wealth.index, xgb_wealth, label="XGB", linewidth=1.8, alpha=0.9)
         if not bh_wealth.empty:
-            ax.plot(bh_wealth.index, bh_wealth / bh_wealth.iloc[0], label="B&H equal weight")
+            ax.plot(bh_wealth.index, bh_wealth, label="B&H", linewidth=1.8, alpha=0.85)
+        ax.set_yscale("log")
+        format_log_wealth_axis(ax)
         ax.legend(loc="upper left")
-    ax.set_title("Equity curves")
-    ax.set_xlabel("timestamp")
-    ax.set_ylabel("normalized wealth")
+    ax.set_title("Equity curves comparison")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Wealth")
     _format_date_axis(ax)
 
     ax = axes[1, 1]

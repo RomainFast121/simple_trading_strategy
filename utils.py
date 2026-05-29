@@ -1486,6 +1486,73 @@ def _max_drawdown_window(wealth):
     return peak_time, trough_time, peak_wealth, trough_wealth
 
 
+def _log_grid_values(low, high):
+    if low <= 0 or high <= 0 or not np.isfinite(low) or not np.isfinite(high):
+        return np.array([])
+
+    start_exp = int(np.floor(np.log10(low))) - 1
+    end_exp = int(np.ceil(np.log10(high))) + 1
+    values = []
+    for exponent in range(start_exp, end_exp + 1):
+        values.extend(np.arange(1.0, 10.0) * (10.0**exponent))
+    return np.array(sorted(value for value in values if value > 0 and np.isfinite(value)))
+
+
+def _infer_axis_reference_value(ax):
+    candidates = []
+    for line in ax.lines:
+        ydata = np.asarray(line.get_ydata(orig=False), dtype=float)
+        ydata = ydata[np.isfinite(ydata) & (ydata > 0)]
+        if len(ydata):
+            candidates.append(ydata[0])
+    if not candidates:
+        return None
+    return float(candidates[0])
+
+
+def format_log_wealth_axis(ax, reference_value=None):
+    from matplotlib.ticker import LogLocator, FuncFormatter
+
+    low, high = ax.get_ylim()
+    if reference_value is None:
+        reference_value = _infer_axis_reference_value(ax)
+    if reference_value is not None and reference_value > 0 and np.isfinite(reference_value):
+        ticks = _log_grid_values(min(low, reference_value), max(high, reference_value))
+        previous_ticks = ticks[ticks < reference_value]
+        next_ticks = ticks[ticks > reference_value]
+        visible_ticks = ticks[(ticks >= low) & (ticks <= high)]
+        reference_visible = low <= reference_value <= high
+        if len(visible_ticks) < 3 or not reference_visible:
+            if len(previous_ticks):
+                low = min(low, previous_ticks[-1])
+            low = min(low, reference_value)
+            high = max(high, reference_value)
+            if len(next_ticks):
+                high = max(high, next_ticks[0])
+            ax.set_ylim(low, high)
+
+    ax.yaxis.set_major_locator(LogLocator(base=10.0, subs=(1.0,)))
+    ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2.0, 10.0)))
+
+    def _format_tick(value, _):
+        if value <= 0 or not np.isfinite(value):
+            return ""
+        axis_low, axis_high = ax.get_ylim()
+        if value < axis_low * (1 - 1e-10) or value > axis_high * (1 + 1e-10):
+            return ""
+        if value >= 1000:
+            return f"{value:,.0f}"
+        if value >= 100:
+            return f"{value:.0f}"
+        return f"{value:g}"
+
+    ax.yaxis.set_major_formatter(FuncFormatter(_format_tick))
+    ax.yaxis.set_minor_formatter(FuncFormatter(_format_tick))
+    ax.grid(True, which="major", axis="y", linewidth=1.35, alpha=0.62)
+    ax.grid(True, which="minor", axis="y", linewidth=0.9, alpha=0.42)
+    return ax
+
+
 # Plot a single wealth curve in a seaborn-style chart, with an optional benchmark overlay.
 def plot_wealth(
     wealth,
@@ -1540,6 +1607,7 @@ def plot_wealth(
 
     if log_scale:
         ax.set_yscale("log")
+        format_log_wealth_axis(ax)
 
     ax.set_title(title)
     ax.set_xlabel("Date")
@@ -1935,6 +2003,7 @@ def plot_monte_carlo_wealth(
 
     if log_scale:
         ax.set_yscale("log")
+        format_log_wealth_axis(ax)
 
     ax.set_title(title)
     ax.set_xlabel("Date")

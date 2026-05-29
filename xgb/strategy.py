@@ -124,6 +124,7 @@ class XGBStrategy:
         tuning_score_tolerance=None,
         tuning_min_prediction_unique=None,
         tuning_min_prediction_std=None,
+        split_end=None,
     ):
         values = {
             "train_size": train_size,
@@ -143,6 +144,7 @@ class XGBStrategy:
             "tuning_score_tolerance": tuning_score_tolerance,
             "tuning_min_prediction_unique": tuning_min_prediction_unique,
             "tuning_min_prediction_std": tuning_min_prediction_std,
+            "split_end": split_end,
         }
         for name, value in values.items():
             if value is not None or not hasattr(self, name):
@@ -298,8 +300,16 @@ class XGBStrategy:
             "tuning_score_tolerance": self.tuning_score_tolerance,
             "tuning_min_prediction_unique": self.tuning_min_prediction_unique,
             "tuning_min_prediction_std": self.tuning_min_prediction_std,
+            "split_end": self.split_end,
             "threshold_calibration": "previous_split_absolute_value_v1",
         }
+
+    def _walkforward_model_frame(self):
+        if self.split_end is None:
+            return self.model_frame
+        cutoff_date = pd.Timestamp(self.split_end).date()
+        trade_dates = pd.to_datetime(self.model_frame["trade_date"]).dt.date
+        return self.model_frame.loc[trade_dates <= cutoff_date].copy()
 
     def _save_walkforward_outputs(self):
         save_frame(self.predictions, self.output_dir / "predictions.parquet")
@@ -389,6 +399,7 @@ class XGBStrategy:
         tuning_score_tolerance=None,
         tuning_min_prediction_unique=None,
         tuning_min_prediction_std=None,
+        split_end=None,
         force=False,
     ):
         self._set_walkforward_params(
@@ -409,6 +420,7 @@ class XGBStrategy:
             tuning_score_tolerance=tuning_score_tolerance,
             tuning_min_prediction_unique=tuning_min_prediction_unique,
             tuning_min_prediction_std=tuning_min_prediction_std,
+            split_end=split_end,
         )
         required = [
             "train_size",
@@ -436,8 +448,9 @@ class XGBStrategy:
                 + ", ".join(missing)
             )
         self._ensure_feature_panel()
+        split_model_frame = self._walkforward_model_frame()
         splits = make_walkforward_splits(
-            self.model_frame,
+            split_model_frame,
             train_size=self.train_size,
             tune_size=self.tune_size,
             test_size=self.test_size,
@@ -467,9 +480,9 @@ class XGBStrategy:
                 f"tune {split.tune_days[0]} -> {split.tune_days[-1]}, "
                 f"test {split.test_days[0]} -> {split.test_days[-1]})."
             )
-            train_df = select_split_frame(self.model_frame, split.train_days)
-            tune_df = select_split_frame(self.model_frame, split.tune_days)
-            test_df = select_split_frame(self.model_frame, split.test_days)
+            train_df = select_split_frame(split_model_frame, split.train_days)
+            tune_df = select_split_frame(split_model_frame, split.tune_days)
+            test_df = select_split_frame(split_model_frame, split.test_days)
 
             scaler = fit_feature_scaler(train_df, self.feature_columns)
             train_scaled = transform_with_scaler(train_df, scaler, self.feature_columns)
@@ -1342,8 +1355,9 @@ class XGBStrategy:
             excluded = set(group_columns)
             variants[f"minus_{group_name}"] = [column for column in base_columns if column not in excluded]
 
+        split_model_frame = self._walkforward_model_frame()
         splits = make_walkforward_splits(
-            self.model_frame,
+            split_model_frame,
             train_size=self.train_size,
             tune_size=self.tune_size,
             test_size=self.test_size,
@@ -1573,6 +1587,7 @@ class XGBStrategy:
             "tuning_score_tolerance",
             "tuning_min_prediction_unique",
             "tuning_min_prediction_std",
+            "split_end",
             "force",
         }
         walkforward_kwargs = {key: kwargs.pop(key) for key in list(kwargs) if key in walkforward_keys}

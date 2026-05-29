@@ -829,7 +829,30 @@ def fit_xgb_model(X_train, y_train, params):
 def _xgb_complexity_rank(params):
     """Lower is simpler; used only to break near-ties on the tune split."""
     params = params or {}
-    return (json.dumps(params, sort_keys=True, default=str),)
+    required = [
+        "max_depth",
+        "n_estimators",
+        "learning_rate",
+        "min_child_weight",
+        "reg_lambda",
+        "reg_alpha",
+        "gamma",
+        "subsample",
+        "colsample_bytree",
+    ]
+    if not all(key in params for key in required):
+        return (json.dumps(params, sort_keys=True, default=str),)
+    return (
+        float(params["max_depth"]),
+        float(params["n_estimators"]),
+        float(params["learning_rate"]),
+        -float(params["min_child_weight"]),
+        -float(params["reg_lambda"]),
+        -float(params["reg_alpha"]),
+        -float(params["gamma"]),
+        float(params["subsample"]),
+        float(params["colsample_bytree"]),
+    )
 
 
 # Tune XGB with a sampled grid search on the walk-forward tune split.

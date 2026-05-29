@@ -6,11 +6,13 @@ import numpy as np
 import pandas as pd
 
 from utils import (
+    attach_buy_and_hold_metrics,
     calculate_buy_and_hold_baseline,
     estimate_asset_annualized_volatility,
     estimate_periods_per_year,
     format_log_wealth_axis,
     plot_wealth,
+    portfolio_column,
     summarize_returns,
 )
 
@@ -361,9 +363,10 @@ class AssemblingStrategy:
         return "Assembling rolling Sharpe"
 
     def _component_portfolio_series(self, input_data, column):
-        if ("portfolio", column) not in input_data.frame.columns:
+        series = portfolio_column(input_data.frame, column, dropna=False)
+        if series.empty:
             return pd.Series(index=self.active_index, dtype=float)
-        return pd.to_numeric(input_data.frame[("portfolio", column)], errors="coerce").reindex(self.active_index)
+        return pd.to_numeric(series, errors="coerce").reindex(self.active_index)
 
     def _build_component_returns(self):
         columns = {}
@@ -729,9 +732,7 @@ class AssemblingStrategy:
                 "fees": self.fees,
             },
         )
-        self.summary["B&H_yearly_factor"] = self.buy_and_hold_summary["yearly_factor"]
-        self.summary["B&H_max_drawdown"] = self.buy_and_hold_summary["max_drawdown"]
-        self.summary["B&H_sharpe_ratio_annualized"] = self.buy_and_hold_summary["sharpe_ratio_annualized"]
+        attach_buy_and_hold_metrics(self.summary, self.buy_and_hold_summary)
         self._build_comparison()
         return self.data
 
@@ -941,12 +942,8 @@ class AssemblingStrategy:
                 color=color,
             )
 
-        benchmark_wealth = (
-            self.buy_and_hold_data["portfolio"]["wealth"]
-            if isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
-            else self.buy_and_hold_data.get("wealth")
-        )
-        if benchmark_wealth is not None:
+        benchmark_wealth = portfolio_column(self.buy_and_hold_data, "wealth")
+        if not benchmark_wealth.empty:
             ax.plot(
                 benchmark_wealth.index,
                 benchmark_wealth,
@@ -969,13 +966,9 @@ class AssemblingStrategy:
     def plot_assembled_wealth(self):
         if self.data.empty:
             self.run()
-        benchmark_wealth = (
-            self.buy_and_hold_data["portfolio"]["wealth"]
-            if isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
-            else self.buy_and_hold_data.get("wealth")
-        )
+        benchmark_wealth = portfolio_column(self.buy_and_hold_data, "wealth")
         return plot_wealth(
-            self.data["portfolio"]["wealth"],
+            portfolio_column(self.data, "wealth"),
             title="Equity curves comparison",
             log_scale=True,
             benchmark_wealth=benchmark_wealth,

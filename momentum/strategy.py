@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from utils import (
+    attach_buy_and_hold_metrics,
     calculate_buy_and_hold_baseline,
     calculate_monte_carlo_performance,
     calculate_performance,
@@ -12,7 +13,10 @@ from utils import (
     normalize_symbol_input,
     plot_monte_carlo_wealth,
     plot_wealth,
+    portfolio_column,
+    require_attributes,
     rolling_annualized_vol,
+    update_provided_attributes,
 )
 
 
@@ -83,19 +87,15 @@ class MomentumStrategy:
             "init_amount": init_amount,
         }
 
-        for attribute, value in updates.items():
-            if value is not None:
-                setattr(self, attribute, value)
+        update_provided_attributes(self, updates)
+        self._require_strategy_params("Missing strategy parameters: ")
 
-        missing = [
-            name
-            for name in ["bias", "ma", "fees", "target_vol", "vol_window", "init_amount"]
-            if getattr(self, name) is None
-        ]
-        if missing:
-            raise ValueError(
-                "Missing strategy parameters: " + ", ".join(missing)
-            )
+    def _require_strategy_params(self, message):
+        require_attributes(
+            self,
+            ["bias", "ma", "fees", "target_vol", "vol_window", "init_amount"],
+            message,
+        )
 
     # Download and store one native raw dataframe per selected sleeve.
     def fetch_data(self):
@@ -619,22 +619,12 @@ class MomentumStrategy:
 
         self.data, self.summary = self._evaluate_close_series(self.raw_data)
         _, baseline_summary = self._update_buy_and_hold_baseline()
-        self.summary["B&H_yearly_factor"] = baseline_summary["yearly_factor"]
-        self.summary["B&H_max_drawdown"] = baseline_summary["max_drawdown"]
-        self.summary["B&H_sharpe_ratio_annualized"] = baseline_summary["sharpe_ratio_annualized"]
+        attach_buy_and_hold_metrics(self.summary, baseline_summary)
         return self.data
 
     def latest_positions(self):
         """Return the latest momentum positions available from the current raw close data."""
-        missing = [
-            name
-            for name in ["bias", "ma", "fees", "target_vol", "vol_window", "init_amount"]
-            if getattr(self, name) is None
-        ]
-        if missing:
-            raise ValueError(
-                "Missing strategy parameters: " + ", ".join(missing) + ". Run run(...) first."
-            )
+        self._require_strategy_params("Missing strategy parameters. Run run(...) first or pass them explicitly: ")
 
         if not self.raw_data:
             self.fetch_data()
@@ -724,9 +714,7 @@ class MomentumStrategy:
         self.monte_carlo_path_summaries = monte_carlo_results["path_summaries"]
         self.monte_carlo_summary = monte_carlo_results["summary"]
         _, baseline_summary = self._update_buy_and_hold_baseline()
-        self.monte_carlo_summary["B&H_yearly_factor"] = baseline_summary["yearly_factor"]
-        self.monte_carlo_summary["B&H_max_drawdown"] = baseline_summary["max_drawdown"]
-        self.monte_carlo_summary["B&H_sharpe_ratio_annualized"] = baseline_summary["sharpe_ratio_annualized"]
+        attach_buy_and_hold_metrics(self.monte_carlo_summary, baseline_summary)
         return self.monte_carlo_summary
 
     # Plot the wealth curve of the real backtest using total portfolio wealth when several sleeves are used.
@@ -734,17 +722,8 @@ class MomentumStrategy:
         if self.data.empty:
             self.run()
 
-        wealth = (
-            self.data["portfolio"]["wealth"]
-            if isinstance(self.data.columns, pd.MultiIndex)
-            else self.data["wealth"]
-        )
-        benchmark_wealth = (
-            self.buy_and_hold_data["portfolio"]["wealth"]
-            if isinstance(self.buy_and_hold_data, pd.DataFrame)
-            and isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
-            else self.buy_and_hold_data.get("wealth")
-        )
+        wealth = portfolio_column(self.data, "wealth")
+        benchmark_wealth = portfolio_column(self.buy_and_hold_data, "wealth")
         return plot_wealth(
             wealth,
             title=f"{self.ticker_label} Momentum Strategy Wealth",
@@ -758,12 +737,7 @@ class MomentumStrategy:
         if self.monte_carlo_wealth.empty:
             self.run_monte_carlo()
 
-        benchmark_wealth = (
-            self.buy_and_hold_data["portfolio"]["wealth"]
-            if isinstance(self.buy_and_hold_data, pd.DataFrame)
-            and isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
-            else self.buy_and_hold_data.get("wealth")
-        )
+        benchmark_wealth = portfolio_column(self.buy_and_hold_data, "wealth")
         return plot_monte_carlo_wealth(
             self.monte_carlo_wealth,
             title=f"{self.ticker_label} Momentum Strategy Monte Carlo Wealth",

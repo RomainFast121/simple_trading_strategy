@@ -37,6 +37,19 @@ BINANCE_TIMEFRAMES = {
 }
 
 
+def update_provided_attributes(target, values, *, initialize_missing=False):
+    """Apply explicitly provided runtime parameters while preserving prior state."""
+    for name, value in values.items():
+        if value is not None or (initialize_missing and not hasattr(target, name)):
+            setattr(target, name, value)
+
+
+def require_attributes(target, names, message):
+    missing = [name for name in names if getattr(target, name) is None]
+    if missing:
+        raise ValueError(message + ", ".join(missing))
+
+
 TIMEFRAME_ALIASES = {
     "1min": "1m",
     "3min": "3m",
@@ -385,6 +398,29 @@ def extract_close_map(source, symbols=None):
         return {symbol: source[symbol].astype(float) for symbol in source.columns}
 
     raise ValueError("Close source must be a Series, DataFrame, or mapping.")
+
+
+def portfolio_column(frame, column, *, dropna=True):
+    if frame is None or frame.empty:
+        return pd.Series(dtype=float)
+    if isinstance(frame.columns, pd.MultiIndex):
+        if ("portfolio", column) not in frame.columns:
+            return pd.Series(dtype=float)
+        series = frame[("portfolio", column)]
+    elif column in frame.columns:
+        series = frame[column]
+    else:
+        return pd.Series(dtype=float)
+    return series.dropna() if dropna else series
+
+
+def attach_buy_and_hold_metrics(summary, buy_and_hold_summary):
+    if summary is None or buy_and_hold_summary is None or buy_and_hold_summary.empty:
+        return summary
+    summary["B&H_yearly_factor"] = buy_and_hold_summary["yearly_factor"]
+    summary["B&H_max_drawdown"] = buy_and_hold_summary["max_drawdown"]
+    summary["B&H_sharpe_ratio_annualized"] = buy_and_hold_summary["sharpe_ratio_annualized"]
+    return summary
 
 
 # Build a stacked close panel with one row per timestamp and symbol from fetched close series.
@@ -1914,11 +1950,7 @@ def calculate_monte_carlo_performance(
             summary_row = path_summary.iloc[0].to_dict()
             summary_row["path"] = path_name
             path_summaries.append(summary_row)
-            wealth_series = (
-                path_data["portfolio"]["wealth"]
-                if isinstance(path_data.columns, pd.MultiIndex)
-                else path_data["wealth"]
-            )
+            wealth_series = portfolio_column(path_data, "wealth")
             wealth_paths[path_name] = wealth_series
         wealth_index = wealth_paths[path_names[0]].index
     else:
@@ -1929,11 +1961,7 @@ def calculate_monte_carlo_performance(
             summary_row = path_summary.iloc[0].to_dict()
             summary_row["path"] = path_name
             path_summaries.append(summary_row)
-            wealth_series = (
-                path_data["portfolio"]["wealth"]
-                if isinstance(path_data.columns, pd.MultiIndex)
-                else path_data["wealth"]
-            )
+            wealth_series = portfolio_column(path_data, "wealth")
             wealth_paths[path_name] = wealth_series
         wealth_index = simulated_paths.index
 

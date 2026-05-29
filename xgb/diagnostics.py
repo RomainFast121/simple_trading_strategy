@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from utils import format_log_wealth_axis
+from utils import format_log_wealth_axis, portfolio_column
 
 
 FEATURE_GROUPS = {
@@ -78,18 +78,6 @@ def comparison_summary(strategy):
             }
         )
     return pd.DataFrame(rows)
-
-
-def _portfolio_series(frame, column):
-    if frame.empty:
-        return pd.Series(dtype=float)
-    if isinstance(frame.columns, pd.MultiIndex):
-        if ("portfolio", column) in frame.columns:
-            return frame[("portfolio", column)].dropna()
-        return pd.Series(dtype=float)
-    if column in frame.columns:
-        return frame[column].dropna()
-    return pd.Series(dtype=float)
 
 
 def _format_date_axis(ax):
@@ -169,8 +157,8 @@ def plot_equity_comparison(strategy, path):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    xgb_wealth = pd.to_numeric(_portfolio_series(strategy.data, "wealth"), errors="coerce").dropna()
-    bh_wealth = pd.to_numeric(_portfolio_series(strategy.buy_and_hold_data, "wealth"), errors="coerce").dropna()
+    xgb_wealth = pd.to_numeric(portfolio_column(strategy.data, "wealth"), errors="coerce").dropna()
+    bh_wealth = pd.to_numeric(portfolio_column(strategy.buy_and_hold_data, "wealth"), errors="coerce").dropna()
 
     sns.set_theme(style="darkgrid")
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -208,7 +196,7 @@ def plot_combined_diagnostics(strategy, path):
     fig, axes = plt.subplots(2, 2, figsize=(14, 9), constrained_layout=True)
 
     returns = pd.to_numeric(
-        _portfolio_series(strategy.buy_and_hold_data, "net_strategy_return"),
+        portfolio_column(strategy.buy_and_hold_data, "net_strategy_return"),
         errors="coerce",
     ).dropna()
     ax = axes[0, 0]
@@ -254,8 +242,8 @@ def plot_combined_diagnostics(strategy, path):
     ax.set_ylabel("next log return")
 
     ax = axes[1, 0]
-    xgb_wealth = pd.to_numeric(_portfolio_series(strategy.data, "wealth"), errors="coerce").dropna()
-    bh_wealth = pd.to_numeric(_portfolio_series(strategy.buy_and_hold_data, "wealth"), errors="coerce").dropna()
+    xgb_wealth = pd.to_numeric(portfolio_column(strategy.data, "wealth"), errors="coerce").dropna()
+    bh_wealth = pd.to_numeric(portfolio_column(strategy.buy_and_hold_data, "wealth"), errors="coerce").dropna()
     if xgb_wealth.empty and bh_wealth.empty:
         ax.text(0.5, 0.5, "No equity curves", ha="center", va="center", transform=ax.transAxes)
     else:

@@ -8,6 +8,7 @@ import pandas as pd
 
 from utils import (
     apply_xgb_cross_sectional_positions,
+    attach_buy_and_hold_metrics,
     build_search_grid,
     build_xgb_sleeve_frame,
     calculate_buy_and_hold_baseline,
@@ -23,12 +24,15 @@ from utils import (
     make_walkforward_splits,
     normalize_symbol_input,
     plot_wealth,
+    portfolio_column,
     prediction_metrics,
+    require_attributes,
     select_split_frame,
     to_xy,
     transform_with_pca,
     transform_with_scaler,
     tune_xgb_model,
+    update_provided_attributes,
 )
 
 from .data import (
@@ -42,6 +46,44 @@ from .data import (
     save_frame,
 )
 from .diagnostics import FEATURE_GROUPS, build_diagnostics
+
+
+WALKFORWARD_REQUIRED_PARAMS = [
+    "train_size",
+    "tune_size",
+    "test_size",
+    "step_size",
+    "mode",
+    "refit_on_train_plus_tune",
+    "model_params",
+    "tuning_grid",
+    "max_trials",
+    "random_state",
+    "pca_enabled",
+    "pca_n_components",
+    "tuning_min_side_balance",
+    "metric_filter_quantile",
+    "tuning_score_tolerance",
+    "tuning_min_prediction_unique",
+    "tuning_min_prediction_std",
+]
+
+
+BACKTEST_REQUIRED_PARAMS = [
+    "fees",
+    "target_vol",
+    "vol_lookback",
+    "vol_lookback_min",
+    "vol_lookback_max",
+    "vol_lookback_step",
+    "leverage_cap",
+    "threshold_quantile",
+    "threshold_quantile_min",
+    "threshold_quantile_max",
+    "threshold_quantile_step",
+    "evaluation_start_split",
+    "init_amount",
+]
 
 
 class XGBStrategy:
@@ -146,9 +188,7 @@ class XGBStrategy:
             "tuning_min_prediction_std": tuning_min_prediction_std,
             "split_end": split_end,
         }
-        for name, value in values.items():
-            if value is not None or not hasattr(self, name):
-                setattr(self, name, value)
+        update_provided_attributes(self, values, initialize_missing=True)
 
     def _set_backtest_params(
         self,
@@ -188,9 +228,7 @@ class XGBStrategy:
             "evaluation_start_split": evaluation_start_split,
             "init_amount": init_amount,
         }
-        for name, value in values.items():
-            if value is not None or not hasattr(self, name):
-                setattr(self, name, value)
+        update_provided_attributes(self, values, initialize_missing=True)
 
     def fetch_data(self, force=False, save=True):
         self.raw_data = fetch_or_load_raw_data(self, force=force, save=save)
@@ -422,31 +460,11 @@ class XGBStrategy:
             tuning_min_prediction_std=tuning_min_prediction_std,
             split_end=split_end,
         )
-        required = [
-            "train_size",
-            "tune_size",
-            "test_size",
-            "step_size",
-            "mode",
-            "refit_on_train_plus_tune",
-            "model_params",
-            "tuning_grid",
-            "max_trials",
-            "random_state",
-            "pca_enabled",
-            "pca_n_components",
-            "tuning_min_side_balance",
-            "metric_filter_quantile",
-            "tuning_score_tolerance",
-            "tuning_min_prediction_unique",
-            "tuning_min_prediction_std",
-        ]
-        missing = [name for name in required if getattr(self, name) is None]
-        if missing:
-            raise ValueError(
-                "Pass private walk-forward parameters explicitly from the ignored notebook: "
-                + ", ".join(missing)
-            )
+        require_attributes(
+            self,
+            WALKFORWARD_REQUIRED_PARAMS,
+            "Pass private walk-forward parameters explicitly from the ignored notebook: ",
+        )
         self._ensure_feature_panel()
         split_model_frame = self._walkforward_model_frame()
         splits = make_walkforward_splits(
@@ -1189,27 +1207,11 @@ class XGBStrategy:
             evaluation_start_split=evaluation_start_split,
             init_amount=init_amount,
         )
-        required = [
-            "fees",
-            "target_vol",
-            "vol_lookback",
-            "vol_lookback_min",
-            "vol_lookback_max",
-            "vol_lookback_step",
-            "leverage_cap",
-            "threshold_quantile",
-            "threshold_quantile_min",
-            "threshold_quantile_max",
-            "threshold_quantile_step",
-            "evaluation_start_split",
-            "init_amount",
-        ]
-        missing = [name for name in required if getattr(self, name) is None]
-        if missing:
-            raise ValueError(
-                "Pass private threshold/backtest parameters explicitly from the ignored notebook: "
-                + ", ".join(missing)
-            )
+        require_attributes(
+            self,
+            BACKTEST_REQUIRED_PARAMS,
+            "Pass private threshold/backtest parameters explicitly from the ignored notebook: ",
+        )
         if self.predictions.empty and not self._load_predictions():
             print("No cached walk-forward predictions found, running walk-forward first.")
             self.run_walkforward()
@@ -1241,9 +1243,7 @@ class XGBStrategy:
                 "run_name": self.run_name,
             },
         )
-        self.summary["B&H_yearly_factor"] = self.buy_and_hold_summary["yearly_factor"]
-        self.summary["B&H_max_drawdown"] = self.buy_and_hold_summary["max_drawdown"]
-        self.summary["B&H_sharpe_ratio_annualized"] = self.buy_and_hold_summary["sharpe_ratio_annualized"]
+        attach_buy_and_hold_metrics(self.summary, self.buy_and_hold_summary)
         if not self.parameter_schedule.empty:
             self.summary["selected_threshold_quantile"] = float(
                 self.parameter_schedule["applied_threshold_quantile"].iloc[-1]
@@ -1599,17 +1599,8 @@ class XGBStrategy:
     def plot_wealth(self):
         if self.data.empty:
             self.run_threshold()
-        wealth = (
-            self.data["portfolio"]["wealth"]
-            if isinstance(self.data.columns, pd.MultiIndex)
-            else self.data["wealth"]
-        )
-        benchmark_wealth = (
-            self.buy_and_hold_data["portfolio"]["wealth"]
-            if isinstance(self.buy_and_hold_data, pd.DataFrame)
-            and isinstance(self.buy_and_hold_data.columns, pd.MultiIndex)
-            else self.buy_and_hold_data.get("wealth")
-        )
+        wealth = portfolio_column(self.data, "wealth")
+        benchmark_wealth = portfolio_column(self.buy_and_hold_data, "wealth")
         return plot_wealth(
             wealth,
             title=f"{self.ticker_label} XGB Strategy Wealth",

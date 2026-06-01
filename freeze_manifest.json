@@ -1,0 +1,40 @@
+{
+  "schema": "simple_strategy_freeze_manifest_v1",
+  "freeze_date": "2026-06-01",
+  "optimized_on": "2026-05-26",
+  "hash_method": "sha256(canonical_json)",
+  "canonical_json": {
+    "sort_keys": true,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "encoding": "utf-8",
+    "script": "scripts/hash_freeze_config.py"
+  },
+  "private_config_files": {
+    "note": "Private config files are intentionally not tracked in the public repository.",
+    "ignored_directory": "private_freeze_configs/"
+  },
+  "hash_exclusions": [
+    "future paper-tracking end date",
+    "metrics restart date",
+    "diagnostic plot flags",
+    "output paths",
+    "notebook execution counts",
+    "notebook cell outputs",
+    "local cached data"
+  ],
+  "profiles": {
+    "high_growth": {
+      "description": "Higher-growth frozen profile with 50% portfolio target volatility for ensemble variants.",
+      "private_config_file": "private_freeze_configs/2026-06-01_high_growth_config.json",
+      "sha256": "e375ee3cda633426ba04538116d849c66c13ca72a52473b85a1bebd72c2bd422"
+    },
+    "lower_risk": {
+      "description": "Lower-risk frozen profile with 30% target volatility for the volatility-targeted ensemble and 40% target volatility for the other ensemble variants.",
+      "private_config_file": "private_freeze_configs/2026-06-01_lower_risk_config.json",
+      "sha256": "3d63a413a4e570a3b288cef8c29a433f7e0ddd8235267a89a46e3cd6b184e8b2"
+    }
+  }
+}

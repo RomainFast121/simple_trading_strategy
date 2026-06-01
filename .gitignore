@@ -1,0 +1,10 @@
+*.ipynb
+local_notebooks/
+__pycache__/
+pycache/
+*.pyc
+*.csv
+local_outputs/
+private_freeze_configs/
+.venv/
+.DS_Store

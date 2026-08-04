@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Stage 3 — Conditional Momentum, Mean-Reversion, and Crowding Due Diligence</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1120px; margin: 28px auto; color: #17202a; line-height: 1.42; }
+    h1 { margin: 0 0 0.35rem; font-size: 28px; color: #111827; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #dde3ea; padding-bottom: 0.35rem; font-size: 18px; color: #111827; }
+    h3 { font-size: 14px; margin: 1rem 0 0.4rem; color: #273244; }
+    p { margin: 0.45rem 0 0.9rem; }
+    .note { color: #5d6d7e; max-width: 900px; line-height: 1.45; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0 18px; }
+    .card { background: #f7f9fc; border: 1px solid #e1e8f0; border-radius: 12px; padding: 12px; min-width: 0; }
+    .card span { display: block; color: #64748b; font-size: 12px; margin-bottom: 4px; }
+    .card strong { display: block; color: #0f172a; font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .return-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(170px, 1fr); gap: 16px; align-items: stretch; }
+    .histogram { display: block; width: 100%; height: auto; }
+    .return-stats { display: flex; align-items: center; }
+    .return-stats table.data-table { width: auto; min-width: 145px; height: 100%; table-layout: auto; margin-top: 0; }
+    .return-stats .data-table th, .return-stats .data-table td { padding: 7px 10px; white-space: nowrap; }
+    table.data-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; margin-top: 0.75rem; font-size: 12px; border: 1px solid #dbe3ea; border-radius: 10px; overflow: hidden; background: #ffffff; }
+    .data-table th, .data-table td { border-bottom: 1px solid #e6ebf0; padding: 9px 10px; text-align: right; vertical-align: top; overflow-wrap: anywhere; }
+    .data-table th:first-child, .data-table td:first-child { text-align: left; }
+    .data-table th { background: #f1f4f7; color: #334155; font-weight: 650; }
+    .data-table tbody tr:nth-child(even) { background: #f8fafb; }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+    .fixed-window-table { overflow-x: auto; margin-top: 0.75rem; }
+    .fixed-window-table table.data-table { margin-top: 0; table-layout: auto; }
+    .fixed-window-table .data-table th { text-align: center; white-space: nowrap; }
+    .fixed-window-table .data-table th:first-child { text-align: left; }
+    .fixed-window-table .data-table td { white-space: nowrap; }
+    .fixed-window-table .data-table td:first-child { color: #334155; font-weight: 650; }
+    .split { margin-top: 8px; }
+    @media (max-width: 800px) { .cards, .grid, .return-grid { grid-template-columns: 1fr; } body { margin: 18px; } }
+    @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }
+  </style>
+</head>
+<body>
+  <h1>Stage 3 — Conditional Momentum, Mean-Reversion, and Crowding Due Diligence</h1>
+  <p class="note">Generated locally from the ignored private configuration. Exact signal parameters are intentionally not exported.</p>
+  <h2>Due-diligence summary</h2><p>Stage 3 covers the post-freeze path from the first realized OOS return through the current run. Development observations used for selection and scaling are excluded. The report focuses on drawdown, fee sensitivity, tail loss, capacity, and exposure discipline.</p><div class='cards'><div class='card'><span>Post-freeze return</span><strong>115.97%</strong></div><div class='card'><span>Post-freeze Sharpe</span><strong>1.96</strong></div><div class='card'><span>Post-freeze max DD</span><strong>24.94%</strong></div><div class='card'><span>Rebalance days</span><strong>395</strong></div></div><h2>Dates used in this package</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>section</th>
+      <th>start</th>
+      <th>end</th>
+      <th>purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stage_3_post_freeze_to_current</td>
+      <td>2025-07-07</td>
+      <td>2026-08-04</td>
+      <td>first realized OOS return through the current data end</td>
+    </tr>
+  </tbody>
+</table><h2>Return distribution</h2><div class='return-grid split'><div><svg class='histogram' viewBox='0 0 850 320' role='img' aria-label='Daily return histogram clipped at the 1st and 99th percentiles'><rect x='0' y='0' width='850' height='320' rx='10' fill='#ffffff'/><line x1='54' y1='272' x2='830' y2='272' stroke='#cbd5e1'/><line x1='54' y1='22' x2='54' y2='272' stroke='#cbd5e1'/><line x1='54' y1='272.0' x2='830' y2='272.0' stroke='#eef2f7'/><text x='10' y='276.0' font-size='11' fill='#64748b'>0</text><line x1='54' y1='188.7' x2='830' y2='188.7' stroke='#eef2f7'/><text x='10' y='192.7' font-size='11' fill='#64748b'>50</text><line x1='54' y1='105.3' x2='830' y2='105.3' stroke='#eef2f7'/><text x='10' y='109.3' font-size='11' fill='#64748b'>100</text><line x1='54' y1='22.0' x2='830' y2='22.0' stroke='#eef2f7'/><text x='10' y='26.0' font-size='11' fill='#64748b'>150</text><rect x='165.9' y='262.0' width='25.7' height='10.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='221.3' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='249.0' y='262.0' width='25.7' height='10.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='276.7' y='255.3' width='25.7' height='16.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='304.4' y='223.7' width='25.7' height='48.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='332.1' y='108.7' width='25.7' height='163.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='359.9' y='33.7' width='25.7' height='238.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='387.6' y='170.3' width='25.7' height='101.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='415.3' y='245.3' width='25.7' height='26.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='443.0' y='253.7' width='25.7' height='18.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='470.7' y='265.3' width='25.7' height='6.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='498.4' y='268.7' width='25.7' height='3.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='526.1' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='664.7' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='692.4' y='263.7' width='25.7' height='8.3' rx='2' fill='#0f766e' opacity='0.86'/><line x1='54.0' y1='22' x2='54.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='54.0' y='295' font-size='11' fill='#64748b' text-anchor='start'>-10%</text><line x1='209.2' y1='22' x2='209.2' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='209.2' y='295' font-size='11' fill='#64748b' text-anchor='middle'>-5%</text><line x1='364.4' y1='22' x2='364.4' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='364.4' y='295' font-size='11' fill='#64748b' text-anchor='middle'>0%</text><line x1='519.6' y1='22' x2='519.6' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='519.6' y='295' font-size='11' fill='#64748b' text-anchor='middle'>5%</text><line x1='674.8' y1='22' x2='674.8' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='674.8' y='295' font-size='11' fill='#64748b' text-anchor='middle'>10%</text><line x1='830.0' y1='22' x2='830.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='830.0' y='295' font-size='11' fill='#64748b' text-anchor='end'>15%</text><text x='54' y='312' font-size='11' fill='#64748b'>Display clipped to 1% / 99% for readability</text></svg></div><div class='return-stats'><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Metric</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Min</td>
+      <td>-6.69%</td>
+    </tr>
+    <tr>
+      <td>Max</td>
+      <td>16.61%</td>
+    </tr>
+    <tr>
+      <td>Mean</td>
+      <td>0.22%</td>
+    </tr>
+    <tr>
+      <td>Std</td>
+      <td>2.12%</td>
+    </tr>
+    <tr>
+      <td>Median</td>
+      <td>0.03%</td>
+    </tr>
+  </tbody>
+</table></div></div><h2>Core metrics</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>period</th>
+      <th>return</th>
+      <th>annualized_return</th>
+      <th>sharpe</th>
+      <th>max_dd</th>
+      <th>calmar</th>
+      <th>positive_month_frac</th>
+      <th>worst_month</th>
+      <th>active_rebalance_days</th>
+      <th>win_rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>post_freeze_to_current</td>
+      <td>115.97%</td>
+      <td>104.17%</td>
+      <td>1.96</td>
+      <td>24.94%</td>
+      <td>4.18</td>
+      <td>57.14%</td>
+      <td>-12.07%</td>
+      <td>395</td>
+      <td>51.52%</td>
+    </tr>
+  </tbody>
+</table><h2>Capacity check — 10M allocation</h2><p>For each anonymized asset and day, participation is the absolute rebalance notional for a 10M allocation divided by that day&#x27;s Binance USD-M perpetual quote volume. Only the average, 95th percentile, and maximum participation percentages are disclosed.</p><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Asset</th>
+      <th>Avg trade / volume</th>
+      <th>95% trade / volume</th>
+      <th>Max trade / volume</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Asset 1</td>
+      <td>0.08%</td>
+      <td>0.81%</td>
+      <td>2.53%</td>
+    </tr>
+    <tr>
+      <td>Asset 2</td>
+      <td>0.20%</td>
+      <td>1.18%</td>
+      <td>12.03%</td>
+    </tr>
+    <tr>
+      <td>Asset 3</td>
+      <td>0.01%</td>
+      <td>0.05%</td>
+      <td>0.81%</td>
+    </tr>
+    <tr>
+      <td>Asset 4</td>
+      <td>0.00%</td>
+      <td>0.01%</td>
+      <td>0.15%</td>
+    </tr>
+    <tr>
+      <td>Asset 5</td>
+      <td>0.05%</td>
+      <td>0.34%</td>
+      <td>1.80%</td>
+    </tr>
+  </tbody>
+</table><h2>Fee stress</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>scenario</th>
+      <th>fee_bps</th>
+      <th>return</th>
+      <th>annualized_return</th>
+      <th>sharpe</th>
+      <th>max_dd</th>
+      <th>annual_cost_drag</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2_bps</td>
+      <td>2</td>
+      <td>123.38%</td>
+      <td>110.65%</td>
+      <td>2.03</td>
+      <td>24.04%</td>
+      <td>2.09%</td>
+    </tr>
+    <tr>
+      <td>5_bps</td>
+      <td>5</td>
+      <td>115.97%</td>
+      <td>104.17%</td>
+      <td>1.96</td>
+      <td>24.94%</td>
+      <td>5.22%</td>
+    </tr>
+    <tr>
+      <td>10_bps</td>
+      <td>10</td>
+      <td>104.16%</td>
+      <td>93.80%</td>
+      <td>1.83</td>
+      <td>26.41%</td>
+      <td>10.44%</td>
+    </tr>
+    <tr>
+      <td>15_bps</td>
+      <td>15</td>
+      <td>92.99%</td>
+      <td>83.95%</td>
+      <td>1.70</td>
+      <td>27.85%</td>
+      <td>15.66%</td>
+    </tr>
+    <tr>
+      <td>25_bps</td>
+      <td>25</td>
+      <td>72.46%</td>
+      <td>65.73%</td>
+      <td>1.44</td>
+      <td>30.65%</td>
+      <td>26.11%</td>
+    </tr>
+    <tr>
+      <td>50_bps</td>
+      <td>50</td>
+      <td>30.16%</td>
+      <td>27.68%</td>
+      <td>0.80</td>
+      <td>37.77%</td>
+      <td>52.22%</td>
+    </tr>
+  </tbody>
+</table><h2>Fixed-window return analysis</h2><p>Each column summarizes every observed rolling compounded return for that fixed calendar-day horizon. The minimum is the former worst-window measure; the remaining statistics show how representative it is. The final column is dynamic: it is the shortest observed horizon with no negative rolling return.</p><div class='fixed-window-table'><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Statistic</th>
+      <th>7 days</th>
+      <th>14 days</th>
+      <th>30 days</th>
+      <th>60 days</th>
+      <th>90 days</th>
+      <th>180 days</th>
+      <th>365 days</th>
+      <th>Breakeven · 181 days</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Min</td>
+      <td>-17.46%</td>
+      <td>-19.26%</td>
+      <td>-19.96%</td>
+      <td>-21.54%</td>
+      <td>-21.07%</td>
+      <td>-3.86%</td>
+      <td>62.07%</td>
+      <td>0.23%</td>
+    </tr>
+    <tr>
+      <td>25th percentile</td>
+      <td>-1.46%</td>
+      <td>-1.93%</td>
+      <td>-2.40%</td>
+      <td>-2.65%</td>
+      <td>-2.56%</td>
+      <td>15.53%</td>
+      <td>68.76%</td>
+      <td>15.21%</td>
+    </tr>
+    <tr>
+      <td>Median</td>
+      <td>-0.09%</td>
+      <td>0.11%</td>
+      <td>2.31%</td>
+      <td>13.88%</td>
+      <td>32.92%</td>
+      <td>53.64%</td>
+      <td>73.18%</td>
+      <td>53.64%</td>
+    </tr>
+    <tr>
+      <td>Mean</td>
+      <td>1.55%</td>
+      <td>2.96%</td>
+      <td>6.00%</td>
+      <td>12.05%</td>
+      <td>20.57%</td>
+      <td>52.34%</td>
+      <td>87.71%</td>
+      <td>52.73%</td>
+    </tr>
+    <tr>
+      <td>75th percentile</td>
+      <td>2.13%</td>
+      <td>4.54%</td>
+      <td>13.98%</td>
+      <td>30.00%</td>
+      <td>38.04%</td>
+      <td>83.78%</td>
+      <td>112.13%</td>
+      <td>83.75%</td>
+    </tr>
+    <tr>
+      <td>Max</td>
+      <td>39.64%</td>
+      <td>42.48%</td>
+      <td>44.60%</td>
+      <td>54.36%</td>
+      <td>60.17%</td>
+      <td>106.83%</td>
+      <td>139.01%</td>
+      <td>107.48%</td>
+    </tr>
+  </tbody>
+</table></div><h2>Empirical VaR and CVaR</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>observations</th>
+      <th>var_95</th>
+      <th>cvar_95</th>
+      <th>var_99</th>
+      <th>cvar_99</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>394</td>
+      <td>-2.03%</td>
+      <td>-3.85%</td>
+      <td>-5.67%</td>
+      <td>-6.19%</td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

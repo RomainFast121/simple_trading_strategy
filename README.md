@@ -9,7 +9,7 @@ code, research notebooks, configurations, data, operational records, and Stage
 ### Ensemble
 
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=fe5fe64)
 
 ### Momentum
 
@@ -24,4 +24,4 @@ code, research notebooks, configurations, data, operational records, and Stage
 ### Opening-range breakout
 
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ORB/presentation/stage_1_initial_review/outputs/stage_1_report.html)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ORB/presentation/stage_3_paid_pilot/outputs/stage_3_report.html)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ORB/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=fe5fe64)

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Stage 2 — Multi-Strategy Ensemble Replication</title><style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1120px; margin: 28px auto; color: #17202a; line-height: 1.42; }
+    h1 { margin: 0 0 0.35rem; font-size: 28px; color: #111827; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #dde3ea; padding-bottom: 0.35rem; font-size: 18px; color: #111827; }
+    h3 { font-size: 14px; margin: 1rem 0 0.4rem; color: #273244; }
+    p { margin: 0.45rem 0 0.9rem; }
+    .note { color: #5d6d7e; max-width: 900px; line-height: 1.45; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0 18px; }
+    .card { background: #f7f9fc; border: 1px solid #e1e8f0; border-radius: 12px; padding: 12px; min-width: 0; }
+    .card span { display: block; color: #64748b; font-size: 12px; margin-bottom: 4px; }
+    .card strong { display: block; color: #0f172a; font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .return-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(170px, 1fr); gap: 16px; align-items: stretch; }
+    .histogram { display: block; width: 100%; height: auto; }
+    .return-stats { display: flex; align-items: center; }
+    .return-stats table.data-table { width: auto; min-width: 145px; height: 100%; table-layout: auto; margin-top: 0; }
+    .return-stats .data-table th, .return-stats .data-table td { padding: 7px 10px; white-space: nowrap; }
+    table.data-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; margin-top: 0.75rem; font-size: 12px; border: 1px solid #dbe3ea; border-radius: 10px; overflow: hidden; background: #ffffff; }
+    .data-table th, .data-table td { border-bottom: 1px solid #e6ebf0; padding: 9px 10px; text-align: right; vertical-align: top; overflow-wrap: anywhere; }
+    .data-table th:first-child, .data-table td:first-child { text-align: left; }
+    .data-table th { background: #f1f4f7; color: #334155; font-weight: 650; }
+    .data-table tbody tr:nth-child(even) { background: #f8fafb; }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+    .fixed-window-table { overflow-x: auto; margin-top: 0.75rem; }
+    .fixed-window-table table.data-table { margin-top: 0; table-layout: auto; }
+    .fixed-window-table .data-table th { text-align: center; white-space: nowrap; }
+    .fixed-window-table .data-table th:first-child { text-align: left; }
+    .fixed-window-table .data-table td { white-space: nowrap; }
+    .fixed-window-table .data-table td:first-child { color: #334155; font-weight: 650; }
+    .split { margin-top: 8px; }
+    @media (max-width: 800px) { .cards, .grid, .return-grid { grid-template-columns: 1fr; } body { margin: 18px; } }
+    @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }
+  </style></head>
+<body><h1>Stage 2 — Multi-Strategy Ensemble Replication</h1>
+<p class="note">Generated locally from ignored private allocation and strategy configurations. Exact sleeve weights and underlying operational parameters are intentionally not exported.</p>
+<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>21.14%</strong></div><div class='card'><span>Model average daily return</span><strong>1.05%</strong></div><div class='card'><span>Model-forward max DD</span><strong>2.43%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>19</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, and the live tracker. Position CSVs remain local and the report does not display final targets.</p><p><strong>Sample-size control:</strong> annualized return, Sharpe and Calmar are withheld until 30 completed daily observations. Annualizing a four-day tracking sample creates misleading separation between otherwise close daily paths.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>section</th>
+      <th>start</th>
+      <th>end</th>
+      <th>purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stage_2_model_forward</td>
+      <td>2026-08-03</td>
+      <td>2026-08-22</td>
+      <td>frozen model-forward tracking through the last completed daily interval</td>
+    </tr>
+  </tbody>
+</table><h3>Historical OOS same-length return distribution</h3><p class='note'>Each statistic summarizes compounded returns across every rolling window matching the current model-forward observation count inside the frozen OOS interval only; onward observations are excluded. This table is shown while the model-forward sample contains fewer than 180 daily observations. At 180 observations it is removed because too few matching windows remain in the one-year OOS period for a meaningful comparison.</p><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>minimum</th>
+      <th>25th_percentile</th>
+      <th>median</th>
+      <th>mean</th>
+      <th>75th_percentile</th>
+      <th>maximum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-10.79%</td>
+      <td>1.17%</td>
+      <td>6.21%</td>
+      <td>9.50%</td>
+      <td>14.09%</td>
+      <td>51.71%</td>
+    </tr>
+  </tbody>
+</table><h2>Model forward</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>total_return</th>
+      <th>average_daily_return</th>
+      <th>max_dd</th>
+      <th>observations</th>
+      <th>win_rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>21.14%</td>
+      <td>1.05%</td>
+      <td>2.43%</td>
+      <td>19</td>
+      <td>57.89%</td>
+    </tr>
+  </tbody>
+</table><h2>Forward with adjusted position</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>total_return</th>
+      <th>average_daily_return</th>
+      <th>max_dd</th>
+      <th>observations</th>
+      <th>win_rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>21.04%</td>
+      <td>1.05%</td>
+      <td>2.41%</td>
+      <td>19</td>
+      <td>57.89%</td>
+    </tr>
+  </tbody>
+</table><h2>Live tracking</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>total_return</th>
+      <th>average_daily_return</th>
+      <th>max_dd</th>
+      <th>observations</th>
+      <th>win_rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20.64%</td>
+      <td>1.03%</td>
+      <td>2.55%</td>
+      <td>19</td>
+      <td>57.89%</td>
+    </tr>
+  </tbody>
+</table></body></html>

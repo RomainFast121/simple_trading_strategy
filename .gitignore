@@ -1,8 +1,8 @@
 # Public repository allowlist
 #
 # The working directory contains the complete private research and operations
-# projects. Git publishes only this landing material and the approved Stage 1
-# and Stage 3 HTML reports.
+# projects. Git publishes only this landing material and the approved staged
+# HTML reports.
 /*
 !/.gitignore
 !/README.md
@@ -32,6 +32,11 @@
 !/ensemble/presentation/stage_1_initial_review/outputs/
 /ensemble/presentation/stage_1_initial_review/outputs/*
 !/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html
+!/ensemble/presentation/stage_2_nda_review/
+/ensemble/presentation/stage_2_nda_review/*
+!/ensemble/presentation/stage_2_nda_review/outputs/
+/ensemble/presentation/stage_2_nda_review/outputs/*
+!/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html
 !/ensemble/presentation/stage_3_paid_pilot/
 /ensemble/presentation/stage_3_paid_pilot/*
 !/ensemble/presentation/stage_3_paid_pilot/outputs/

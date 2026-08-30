@@ -9,7 +9,7 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; } .chart { display: block; width: 100%; height: auto; } .return-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(170px, 1fr); gap: 16px; align-items: stretch; } .return-stats { display: flex; align-items: center; } .return-stats table.data-table { width: auto; min-width: 145px; height: 100%; table-layout: auto; margin-top: 0; } .return-stats .data-table th, .return-stats .data-table td { padding: 7px 10px; white-space: nowrap; } .split { margin-top: 8px; } table.data-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; margin-top: .75rem; font-size: 12px; border: 1px solid #dbe3ea; border-radius: 10px; overflow: hidden; background: #fff; } .data-table th, .data-table td { border-bottom: 1px solid #e6ebf0; padding: 9px 10px; text-align: right; vertical-align: top; overflow-wrap: anywhere; } .data-table th:first-child, .data-table td:first-child { text-align: left; } .data-table th { background: #f1f4f7; color: #334155; font-weight: 650; } .data-table tbody tr:nth-child(even) { background: #f8fafb; } .data-table tbody tr:last-child td { border-bottom: 0; }
 .fixed-window-table { overflow-x: auto; margin-top: .75rem; } .fixed-window-table table.data-table { margin-top: 0; table-layout: auto; } .fixed-window-table .data-table th { text-align: center; white-space: nowrap; } .fixed-window-table .data-table th:first-child { text-align: left; } .fixed-window-table .data-table td { white-space: nowrap; } .fixed-window-table .data-table td:first-child { color: #334155; font-weight: 650; }
 @media (max-width: 800px) { .cards, .grid, .return-grid { grid-template-columns: 1fr; } body { margin: 18px; } } @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }
-</style></head><body><main><h1>Stage 3 - Opening Range Breakout Paid Pilot Due Diligence</h1><p class="note">Stage 3 covers the post-freeze path from the first OOS daily return through the current completed data end. Development observations used for selection and scaling are excluded.</p><h2>Due-diligence summary</h2><div class="cards"><div class="card"><span>Post-freeze return</span><strong>88.25%</strong></div><div class="card"><span>Post-freeze Sharpe</span><strong>1.23</strong></div><div class="card"><span>Post-freeze max DD</span><strong>15.18%</strong></div><div class="card"><span>Trades</span><strong>192</strong></div></div><h2>Dates used in this package</h2><table class="dataframe data-table">
+</style></head><body><main><h1>Stage 3 - Opening Range Breakout Paid Pilot Due Diligence</h1><p class="note"><strong>Costs:</strong> Model returns include 5 bps transaction fees on each traded entry and exit, plus a 1 bp/day funding allowance on gross invested exposure, prorated by holding time and deducted from wealth only. No funding is charged while flat.</p><p class="note">Stage 3 covers the post-freeze path from the first OOS daily return through the current completed data end. Development observations used for selection and scaling are excluded.</p><h2>Due-diligence summary</h2><div class="cards"><div class="card"><span>Post-freeze return</span><strong>87.89%</strong></div><div class="card"><span>Post-freeze Sharpe</span><strong>1.23</strong></div><div class="card"><span>Post-freeze max DD</span><strong>15.17%</strong></div><div class="card"><span>Trades</span><strong>192</strong></div></div><h2>Dates used in this package</h2><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>section</th>
@@ -26,7 +26,7 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
       <td>first OOS daily return through the latest completed return</td>
     </tr>
   </tbody>
-</table><h2>Return distribution</h2><div class="return-grid split"><div><svg class='chart' viewBox='0 0 850 320' role='img' aria-label='Daily return histogram clipped at first and 99th percentiles'><rect x='0' y='0' width='850' height='320' fill='#ffffff'/><line x1='54' y1='272' x2='830' y2='272' stroke='#cbd5e1'/><line x1='54' y1='22' x2='54' y2='272' stroke='#cbd5e1'/><line x1='54' y1='272.0' x2='830' y2='272.0' stroke='#eef2f7'/><text x='10' y='276.0' font-size='11' fill='#64748b'>0</text><line x1='54' y1='209.5' x2='830' y2='209.5' stroke='#eef2f7'/><text x='10' y='213.5' font-size='11' fill='#64748b'>100</text><line x1='54' y1='147.0' x2='830' y2='147.0' stroke='#eef2f7'/><text x='10' y='151.0' font-size='11' fill='#64748b'>200</text><line x1='54' y1='84.5' x2='830' y2='84.5' stroke='#eef2f7'/><text x='10' y='88.5' font-size='11' fill='#64748b'>300</text><line x1='54' y1='22.0' x2='830' y2='22.0' stroke='#eef2f7'/><text x='10' y='26.0' font-size='11' fill='#64748b'>400</text><rect x='55.0' y='265.8' width='25.7' height='6.2' fill='#0f766e' opacity='0.86'/><rect x='110.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='165.9' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='193.6' y='266.4' width='25.7' height='5.6' fill='#0f766e' opacity='0.86'/><rect x='221.3' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='249.0' y='269.5' width='25.7' height='2.5' fill='#0f766e' opacity='0.86'/><rect x='276.7' y='67.0' width='25.7' height='205.0' fill='#0f766e' opacity='0.86'/><rect x='304.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='332.1' y='268.2' width='25.7' height='3.8' fill='#0f766e' opacity='0.86'/><rect x='359.9' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='387.6' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='415.3' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='443.0' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='470.7' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='498.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='553.9' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='637.0' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='803.3' y='268.9' width='25.7' height='3.1' fill='#0f766e' opacity='0.86'/><line x1='276.1' y1='22' x2='276.1' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='276.1' y='295' font-size='11' fill='#64748b' text-anchor='middle'>0.0%</text><line x1='508.4' y1='22' x2='508.4' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='508.4' y='295' font-size='11' fill='#64748b' text-anchor='middle'>5.0%</text><line x1='740.7' y1='22' x2='740.7' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='740.7' y='295' font-size='11' fill='#64748b' text-anchor='middle'>10.0%</text><text x='54' y='312' font-size='11' fill='#64748b'>Display clipped to 1% / 99% for readability</text></svg></div><div class="return-stats"><table class="dataframe data-table">
+</table><h2>Return distribution</h2><div class="return-grid split"><div><svg class='chart' viewBox='0 0 850 320' role='img' aria-label='Daily return histogram clipped at first and 99th percentiles'><rect x='0' y='0' width='850' height='320' fill='#ffffff'/><line x1='54' y1='272' x2='830' y2='272' stroke='#cbd5e1'/><line x1='54' y1='22' x2='54' y2='272' stroke='#cbd5e1'/><line x1='54' y1='272.0' x2='830' y2='272.0' stroke='#eef2f7'/><text x='10' y='276.0' font-size='11' fill='#64748b'>0</text><line x1='54' y1='209.5' x2='830' y2='209.5' stroke='#eef2f7'/><text x='10' y='213.5' font-size='11' fill='#64748b'>100</text><line x1='54' y1='147.0' x2='830' y2='147.0' stroke='#eef2f7'/><text x='10' y='151.0' font-size='11' fill='#64748b'>200</text><line x1='54' y1='84.5' x2='830' y2='84.5' stroke='#eef2f7'/><text x='10' y='88.5' font-size='11' fill='#64748b'>300</text><line x1='54' y1='22.0' x2='830' y2='22.0' stroke='#eef2f7'/><text x='10' y='26.0' font-size='11' fill='#64748b'>400</text><rect x='55.0' y='265.8' width='25.7' height='6.2' fill='#0f766e' opacity='0.86'/><rect x='110.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='165.9' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='193.6' y='266.4' width='25.7' height='5.6' fill='#0f766e' opacity='0.86'/><rect x='221.3' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='249.0' y='269.5' width='25.7' height='2.5' fill='#0f766e' opacity='0.86'/><rect x='276.7' y='67.0' width='25.7' height='205.0' fill='#0f766e' opacity='0.86'/><rect x='304.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='332.1' y='268.2' width='25.7' height='3.8' fill='#0f766e' opacity='0.86'/><rect x='359.9' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='387.6' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='415.3' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='443.0' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='470.7' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='498.4' y='270.1' width='25.7' height='1.9' fill='#0f766e' opacity='0.86'/><rect x='553.9' y='270.8' width='25.7' height='1.2' fill='#0f766e' opacity='0.86'/><rect x='637.0' y='271.4' width='25.7' height='0.6' fill='#0f766e' opacity='0.86'/><rect x='803.3' y='268.9' width='25.7' height='3.1' fill='#0f766e' opacity='0.86'/><line x1='276.2' y1='22' x2='276.2' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='276.2' y='295' font-size='11' fill='#64748b' text-anchor='middle'>0.0%</text><line x1='508.8' y1='22' x2='508.8' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='508.8' y='295' font-size='11' fill='#64748b' text-anchor='middle'>5.0%</text><line x1='741.4' y1='22' x2='741.4' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='741.4' y='295' font-size='11' fill='#64748b' text-anchor='middle'>10.0%</text><text x='54' y='312' font-size='11' fill='#64748b'>Display clipped to 1% / 99% for readability</text></svg></div><div class="return-stats"><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>Metric</th>
@@ -40,7 +40,7 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
     </tr>
     <tr>
       <td>Max</td>
-      <td>27.56%</td>
+      <td>27.53%</td>
     </tr>
     <tr>
       <td>Mean</td>
@@ -73,13 +73,13 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
   <tbody>
     <tr>
       <td>post_freeze_to_current</td>
-      <td>88.25%</td>
-      <td>81.60%</td>
+      <td>87.89%</td>
+      <td>81.27%</td>
       <td>1.23</td>
-      <td>15.18%</td>
-      <td>5.38</td>
+      <td>15.17%</td>
+      <td>5.36</td>
       <td>76.92%</td>
-      <td>-7.60%</td>
+      <td>-7.59%</td>
       <td>192</td>
       <td>57.81%</td>
     </tr>
@@ -96,9 +96,9 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
   <tbody>
     <tr>
       <td>Asset 1</td>
-      <td>4.41%</td>
-      <td>8.63%</td>
-      <td>9.73%</td>
+      <td>4.40%</td>
+      <td>8.62%</td>
+      <td>9.72%</td>
     </tr>
     <tr>
       <td>Asset 2</td>
@@ -116,7 +116,7 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
       <td>Asset 4</td>
       <td>0.47%</td>
       <td>0.95%</td>
-      <td>1.39%</td>
+      <td>1.38%</td>
     </tr>
     <tr>
       <td>Asset 5</td>
@@ -141,47 +141,47 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
     <tr>
       <td>2_bps</td>
       <td>2</td>
-      <td>121.22%</td>
-      <td>111.45%</td>
+      <td>120.77%</td>
+      <td>111.05%</td>
       <td>1.47</td>
       <td>13.85%</td>
-      <td>15.60%</td>
+      <td>15.79%</td>
     </tr>
     <tr>
       <td>5_bps</td>
       <td>5</td>
-      <td>88.25%</td>
-      <td>81.60%</td>
+      <td>87.89%</td>
+      <td>81.27%</td>
       <td>1.23</td>
-      <td>15.18%</td>
-      <td>35.69%</td>
+      <td>15.17%</td>
+      <td>35.82%</td>
     </tr>
     <tr>
       <td>10_bps</td>
       <td>10</td>
-      <td>43.73%</td>
-      <td>40.79%</td>
+      <td>43.48%</td>
+      <td>40.57%</td>
       <td>0.80</td>
-      <td>17.90%</td>
-      <td>61.81%</td>
+      <td>17.91%</td>
+      <td>61.89%</td>
     </tr>
     <tr>
       <td>15_bps</td>
       <td>15</td>
-      <td>9.62%</td>
-      <td>9.05%</td>
+      <td>9.45%</td>
+      <td>8.89%</td>
       <td>0.34</td>
       <td>20.65%</td>
-      <td>80.74%</td>
+      <td>80.77%</td>
     </tr>
     <tr>
       <td>25_bps</td>
       <td>25</td>
-      <td>-36.45%</td>
-      <td>-34.79%</td>
-      <td>-0.61</td>
-      <td>41.02%</td>
-      <td>103.75%</td>
+      <td>-36.52%</td>
+      <td>-34.86%</td>
+      <td>-0.62</td>
+      <td>41.04%</td>
+      <td>103.74%</td>
     </tr>
     <tr>
       <td>50_bps</td>
@@ -190,7 +190,7 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
       <td>-82.31%</td>
       <td>-2.87</td>
       <td>83.82%</td>
-      <td>119.32%</td>
+      <td>119.29%</td>
     </tr>
   </tbody>
 </table><h2>Fixed-window return analysis</h2><p>Each column summarizes every observed rolling compounded return for that fixed calendar-day horizon. The minimum is the former worst-window measure; the remaining statistics show how representative it is. The final column is dynamic: it is the shortest observed horizon with no negative rolling return.</p><div class="fixed-window-table"><table class="dataframe data-table">
@@ -210,69 +210,69 @@ h1 { margin: 0 0 .35rem; font-size: 28px; color: #111827; } h2 { margin-top: 2re
   <tbody>
     <tr>
       <td>Min</td>
-      <td>-14.53%</td>
-      <td>-13.81%</td>
+      <td>-14.54%</td>
+      <td>-13.80%</td>
       <td>-14.16%</td>
       <td>-10.27%</td>
       <td>-12.06%</td>
-      <td>7.48%</td>
-      <td>82.97%</td>
-      <td>2.83%</td>
+      <td>7.41%</td>
+      <td>82.64%</td>
+      <td>2.78%</td>
     </tr>
     <tr>
       <td>25th percentile</td>
-      <td>-1.52%</td>
+      <td>-1.53%</td>
       <td>-1.34%</td>
-      <td>-0.23%</td>
-      <td>3.09%</td>
-      <td>9.34%</td>
-      <td>22.76%</td>
-      <td>85.44%</td>
-      <td>18.46%</td>
+      <td>-0.24%</td>
+      <td>3.05%</td>
+      <td>9.29%</td>
+      <td>22.68%</td>
+      <td>85.11%</td>
+      <td>18.38%</td>
     </tr>
     <tr>
       <td>Median</td>
       <td>0.00%</td>
-      <td>0.97%</td>
-      <td>4.64%</td>
-      <td>12.65%</td>
-      <td>14.22%</td>
-      <td>32.14%</td>
-      <td>86.95%</td>
-      <td>32.68%</td>
+      <td>0.96%</td>
+      <td>4.63%</td>
+      <td>12.61%</td>
+      <td>14.16%</td>
+      <td>32.02%</td>
+      <td>86.61%</td>
+      <td>32.57%</td>
     </tr>
     <tr>
       <td>Mean</td>
       <td>1.34%</td>
-      <td>2.65%</td>
-      <td>5.80%</td>
-      <td>11.83%</td>
-      <td>16.30%</td>
-      <td>35.63%</td>
-      <td>87.35%</td>
-      <td>33.40%</td>
+      <td>2.64%</td>
+      <td>5.79%</td>
+      <td>11.80%</td>
+      <td>16.25%</td>
+      <td>35.50%</td>
+      <td>87.01%</td>
+      <td>33.29%</td>
     </tr>
     <tr>
       <td>75th percentile</td>
-      <td>2.94%</td>
-      <td>6.91%</td>
-      <td>12.65%</td>
-      <td>21.56%</td>
-      <td>28.71%</td>
-      <td>51.37%</td>
-      <td>89.81%</td>
-      <td>46.03%</td>
+      <td>2.92%</td>
+      <td>6.89%</td>
+      <td>12.61%</td>
+      <td>21.52%</td>
+      <td>28.65%</td>
+      <td>51.21%</td>
+      <td>89.46%</td>
+      <td>45.88%</td>
     </tr>
     <tr>
       <td>Max</td>
-      <td>26.74%</td>
-      <td>23.45%</td>
-      <td>29.73%</td>
-      <td>33.41%</td>
-      <td>50.87%</td>
-      <td>67.81%</td>
-      <td>92.38%</td>
-      <td>63.93%</td>
+      <td>26.71%</td>
+      <td>23.43%</td>
+      <td>29.69%</td>
+      <td>33.35%</td>
+      <td>50.76%</td>
+      <td>67.60%</td>
+      <td>92.02%</td>
+      <td>63.74%</td>
     </tr>
   </tbody>
 </table></div><h2>Empirical VaR and CVaR</h2><table class="dataframe data-table">

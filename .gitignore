@@ -42,6 +42,11 @@
 !/ensemble/presentation/stage_3_paid_pilot/outputs/
 /ensemble/presentation/stage_3_paid_pilot/outputs/*
 !/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html
+!/ensemble/presentation/stage_4_capacity_analysis/
+/ensemble/presentation/stage_4_capacity_analysis/*
+!/ensemble/presentation/stage_4_capacity_analysis/outputs/
+/ensemble/presentation/stage_4_capacity_analysis/outputs/*
+!/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html
 
 !/market-neutral/
 /market-neutral/*

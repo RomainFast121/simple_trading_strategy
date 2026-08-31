@@ -11,6 +11,7 @@ underlying replication evidence are maintained privately.
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html)
 - [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html)
 - [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=fe5fe64)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html)
 
 ### Momentum
 
@@ -54,3 +55,12 @@ fixed-window consistency, the fraction of positive periods, fee sensitivity,
 empirical VaR and CVaR, and trading capacity relative to market volume. This is
 the report intended for a closer assessment of robustness, implementation risk,
 and whether the strategy remains investable beyond its headline performance.
+
+**Stage 4** explores the ensemble's capacity at institutional size. Starting
+with a compounded 10M reference account, it compares gradual execution over
+12, 18, and 24 hours and periodic withdrawals of excess capital. The simulation
+includes transaction fees, funding, and a research-based estimate of market
+impact. Alongside annual return, withdrawals, Sharpe, drawdown, and rolling
+consistency, it reports participation in hourly volume and estimated execution
+costs. This helps show how slower trading and account growth affect performance
+at scale; it is a modeled capacity study, not a guarantee of executable returns.

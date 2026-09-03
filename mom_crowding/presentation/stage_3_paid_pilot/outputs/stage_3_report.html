@@ -43,7 +43,7 @@
   <h1>Stage 3 — Conditional Momentum, Mean-Reversion, and Crowding Due Diligence</h1>
   <p class="note"><strong>Costs:</strong> Model returns include 5 bps transaction fees on traded notional and a 1 bp/day funding allowance on gross invested exposure, deducted from wealth only. Funding is prorated by holding time. Live-account returns use recorded wealth without an additional modeled deduction.</p>
   <p class="note">Generated locally from the ignored private configuration. Exact signal parameters are intentionally not exported.</p>
-  <h2>Due-diligence summary</h2><p>Stage 3 covers the post-freeze path from the first realized OOS return through the current run. Development observations used for selection and scaling are excluded. The report focuses on drawdown, fee sensitivity, tail loss, capacity, and exposure discipline.</p><div class='cards'><div class='card'><span>Post-freeze return</span><strong>163.34%</strong></div><div class='card'><span>Post-freeze Sharpe</span><strong>2.32</strong></div><div class='card'><span>Post-freeze max DD</span><strong>18.99%</strong></div><div class='card'><span>Rebalance days</span><strong>422</strong></div></div><h2>Dates used in this package</h2><table class="dataframe data-table">
+  <h2>Due-diligence summary</h2><p>Stage 3 covers the post-freeze path from the first realized OOS return through the current run. Development observations used for selection and scaling are excluded. The report focuses on drawdown, fee sensitivity, tail loss, capacity, and exposure discipline.</p><div class='cards'><div class='card'><span>Post-freeze return</span><strong>164.27%</strong></div><div class='card'><span>Post-freeze Sharpe</span><strong>2.31</strong></div><div class='card'><span>Post-freeze max DD</span><strong>18.99%</strong></div><div class='card'><span>Rebalance days</span><strong>425</strong></div></div><h2>Dates used in this package</h2><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>section</th>
@@ -56,11 +56,11 @@
     <tr>
       <td>stage_3_post_freeze_to_current</td>
       <td>2025-07-07</td>
-      <td>2026-08-31</td>
+      <td>2026-09-03</td>
       <td>first realized OOS return through the current data end</td>
     </tr>
   </tbody>
-</table><h2>Return distribution</h2><div class='return-grid split'><div><svg class='histogram' viewBox='0 0 850 320' role='img' aria-label='Daily return histogram clipped at the 1st and 99th percentiles'><rect x='0' y='0' width='850' height='320' rx='10' fill='#ffffff'/><line x1='54' y1='272' x2='830' y2='272' stroke='#cbd5e1'/><line x1='54' y1='22' x2='54' y2='272' stroke='#cbd5e1'/><line x1='54' y1='272.0' x2='830' y2='272.0' stroke='#eef2f7'/><text x='10' y='276.0' font-size='11' fill='#64748b'>0</text><line x1='54' y1='188.7' x2='830' y2='188.7' stroke='#eef2f7'/><text x='10' y='192.7' font-size='11' fill='#64748b'>50</text><line x1='54' y1='105.3' x2='830' y2='105.3' stroke='#eef2f7'/><text x='10' y='109.3' font-size='11' fill='#64748b'>100</text><line x1='54' y1='22.0' x2='830' y2='22.0' stroke='#eef2f7'/><text x='10' y='26.0' font-size='11' fill='#64748b'>150</text><rect x='110.4' y='257.0' width='25.7' height='15.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='138.1' y='267.0' width='25.7' height='5.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='165.9' y='260.3' width='25.7' height='11.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='193.6' y='253.7' width='25.7' height='18.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='221.3' y='240.3' width='25.7' height='31.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='249.0' y='212.0' width='25.7' height='60.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='276.7' y='138.7' width='25.7' height='133.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='304.4' y='82.0' width='25.7' height='190.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='332.1' y='185.3' width='25.7' height='86.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='359.9' y='218.7' width='25.7' height='53.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='387.6' y='232.0' width='25.7' height='40.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='415.3' y='258.7' width='25.7' height='13.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='443.0' y='262.0' width='25.7' height='10.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='470.7' y='263.7' width='25.7' height='8.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='498.4' y='268.7' width='25.7' height='3.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='526.1' y='267.0' width='25.7' height='5.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='553.9' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='637.0' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='664.7' y='268.7' width='25.7' height='3.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='720.1' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='803.3' y='263.7' width='25.7' height='8.3' rx='2' fill='#0f766e' opacity='0.86'/><line x1='54.0' y1='22' x2='54.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='54.0' y='295' font-size='11' fill='#64748b' text-anchor='start'>-5%</text><line x1='312.7' y1='22' x2='312.7' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='312.7' y='295' font-size='11' fill='#64748b' text-anchor='middle'>0%</text><line x1='571.3' y1='22' x2='571.3' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='571.3' y='295' font-size='11' fill='#64748b' text-anchor='middle'>5%</text><line x1='830.0' y1='22' x2='830.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='830.0' y='295' font-size='11' fill='#64748b' text-anchor='end'>10%</text><text x='54' y='312' font-size='11' fill='#64748b'>Display clipped to 1% / 99% for readability</text></svg></div><div class='return-stats'><table class="dataframe data-table">
+</table><h2>Return distribution</h2><div class='return-grid split'><div><svg class='histogram' viewBox='0 0 850 320' role='img' aria-label='Daily return histogram clipped at the 1st and 99th percentiles'><rect x='0' y='0' width='850' height='320' rx='10' fill='#ffffff'/><line x1='54' y1='272' x2='830' y2='272' stroke='#cbd5e1'/><line x1='54' y1='22' x2='54' y2='272' stroke='#cbd5e1'/><line x1='54' y1='272.0' x2='830' y2='272.0' stroke='#eef2f7'/><text x='10' y='276.0' font-size='11' fill='#64748b'>0</text><line x1='54' y1='188.7' x2='830' y2='188.7' stroke='#eef2f7'/><text x='10' y='192.7' font-size='11' fill='#64748b'>50</text><line x1='54' y1='105.3' x2='830' y2='105.3' stroke='#eef2f7'/><text x='10' y='109.3' font-size='11' fill='#64748b'>100</text><line x1='54' y1='22.0' x2='830' y2='22.0' stroke='#eef2f7'/><text x='10' y='26.0' font-size='11' fill='#64748b'>150</text><rect x='110.4' y='257.0' width='25.7' height='15.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='138.1' y='267.0' width='25.7' height='5.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='165.9' y='260.3' width='25.7' height='11.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='193.6' y='253.7' width='25.7' height='18.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='221.3' y='240.3' width='25.7' height='31.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='249.0' y='210.3' width='25.7' height='61.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='276.7' y='138.7' width='25.7' height='133.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='304.4' y='82.0' width='25.7' height='190.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='332.1' y='182.0' width='25.7' height='90.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='359.9' y='218.7' width='25.7' height='53.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='387.6' y='232.0' width='25.7' height='40.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='415.3' y='258.7' width='25.7' height='13.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='443.0' y='262.0' width='25.7' height='10.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='470.7' y='263.7' width='25.7' height='8.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='498.4' y='268.7' width='25.7' height='3.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='526.1' y='267.0' width='25.7' height='5.0' rx='2' fill='#0f766e' opacity='0.86'/><rect x='553.9' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='637.0' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='664.7' y='268.7' width='25.7' height='3.3' rx='2' fill='#0f766e' opacity='0.86'/><rect x='720.1' y='270.3' width='25.7' height='1.7' rx='2' fill='#0f766e' opacity='0.86'/><rect x='803.3' y='263.7' width='25.7' height='8.3' rx='2' fill='#0f766e' opacity='0.86'/><line x1='54.0' y1='22' x2='54.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='54.0' y='295' font-size='11' fill='#64748b' text-anchor='start'>-5%</text><line x1='312.7' y1='22' x2='312.7' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='312.7' y='295' font-size='11' fill='#64748b' text-anchor='middle'>0%</text><line x1='571.3' y1='22' x2='571.3' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='571.3' y='295' font-size='11' fill='#64748b' text-anchor='middle'>5%</text><line x1='830.0' y1='22' x2='830.0' y2='272' stroke='#94a3b8' stroke-dasharray='3 4'/><text x='830.0' y='295' font-size='11' fill='#64748b' text-anchor='end'>10%</text><text x='54' y='312' font-size='11' fill='#64748b'>Display clipped to 1% / 99% for readability</text></svg></div><div class='return-stats'><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>Metric</th>
@@ -82,7 +82,7 @@
     </tr>
     <tr>
       <td>Std</td>
-      <td>2.07%</td>
+      <td>2.06%</td>
     </tr>
     <tr>
       <td>Median</td>
@@ -107,15 +107,15 @@
   <tbody>
     <tr>
       <td>post_freeze_to_current</td>
-      <td>163.34%</td>
-      <td>131.65%</td>
-      <td>2.32</td>
+      <td>164.27%</td>
+      <td>130.97%</td>
+      <td>2.31</td>
       <td>18.99%</td>
-      <td>6.93</td>
-      <td>57.14%</td>
+      <td>6.90</td>
+      <td>60.00%</td>
       <td>-7.74%</td>
-      <td>422</td>
-      <td>51.31%</td>
+      <td>425</td>
+      <td>51.42%</td>
     </tr>
   </tbody>
 </table><h2>Capacity check — 10M allocation</h2><p>For each anonymized asset and day, participation is the absolute rebalance notional for a 10M allocation divided by that day&#x27;s Binance USD-M perpetual quote volume. Only the average, 95th percentile, and maximum participation percentages are disclosed.</p><table class="dataframe data-table">
@@ -137,7 +137,7 @@
     <tr>
       <td>Asset 2</td>
       <td>0.17%</td>
-      <td>1.23%</td>
+      <td>1.22%</td>
       <td>6.29%</td>
     </tr>
     <tr>
@@ -149,13 +149,13 @@
     <tr>
       <td>Asset 4</td>
       <td>0.00%</td>
-      <td>0.03%</td>
+      <td>0.02%</td>
       <td>0.13%</td>
     </tr>
     <tr>
       <td>Asset 5</td>
       <td>0.06%</td>
-      <td>0.38%</td>
+      <td>0.37%</td>
       <td>2.17%</td>
     </tr>
   </tbody>
@@ -175,56 +175,56 @@
     <tr>
       <td>2_bps</td>
       <td>2</td>
-      <td>172.47%</td>
-      <td>138.60%</td>
+      <td>173.43%</td>
+      <td>137.85%</td>
       <td>2.39</td>
-      <td>18.08%</td>
-      <td>4.64%</td>
+      <td>18.09%</td>
+      <td>4.62%</td>
     </tr>
     <tr>
       <td>5_bps</td>
       <td>5</td>
-      <td>163.34%</td>
-      <td>131.65%</td>
-      <td>2.32</td>
+      <td>164.27%</td>
+      <td>130.97%</td>
+      <td>2.31</td>
       <td>18.99%</td>
-      <td>7.60%</td>
+      <td>7.56%</td>
     </tr>
     <tr>
       <td>10_bps</td>
       <td>10</td>
-      <td>148.80%</td>
-      <td>120.51%</td>
+      <td>149.67%</td>
+      <td>119.94%</td>
       <td>2.19</td>
-      <td>20.49%</td>
-      <td>12.54%</td>
+      <td>20.48%</td>
+      <td>12.47%</td>
     </tr>
     <tr>
       <td>15_bps</td>
       <td>15</td>
-      <td>135.07%</td>
-      <td>109.91%</td>
+      <td>135.88%</td>
+      <td>109.44%</td>
       <td>2.07</td>
-      <td>21.96%</td>
-      <td>17.47%</td>
+      <td>21.94%</td>
+      <td>17.37%</td>
     </tr>
     <tr>
       <td>25_bps</td>
       <td>25</td>
-      <td>109.82%</td>
-      <td>90.20%</td>
+      <td>110.54%</td>
+      <td>89.91%</td>
       <td>1.82</td>
-      <td>25.22%</td>
-      <td>27.35%</td>
+      <td>25.17%</td>
+      <td>27.18%</td>
     </tr>
     <tr>
       <td>50_bps</td>
       <td>50</td>
-      <td>57.91%</td>
-      <td>48.64%</td>
-      <td>1.19</td>
-      <td>33.41%</td>
-      <td>52.03%</td>
+      <td>58.45%</td>
+      <td>48.66%</td>
+      <td>1.20</td>
+      <td>33.31%</td>
+      <td>51.69%</td>
     </tr>
   </tbody>
 </table><h2>Fixed-window return analysis</h2><p>Each column summarizes every observed rolling compounded return for that fixed calendar-day horizon. The minimum is the former worst-window measure; the remaining statistics show how representative it is. The final column is dynamic: it is the shortest observed horizon with no negative rolling return.</p><div class='fixed-window-table'><table class="dataframe data-table">
@@ -251,51 +251,51 @@
       <td>-14.38%</td>
       <td>-16.44%</td>
       <td>62.09%</td>
-      <td>3.33%</td>
+      <td>2.13%</td>
     </tr>
     <tr>
       <td>25th percentile</td>
-      <td>-1.52%</td>
-      <td>-1.97%</td>
-      <td>-2.67%</td>
-      <td>-4.30%</td>
-      <td>-5.85%</td>
-      <td>19.55%</td>
-      <td>74.92%</td>
-      <td>18.92%</td>
+      <td>-1.53%</td>
+      <td>-1.96%</td>
+      <td>-2.65%</td>
+      <td>-4.27%</td>
+      <td>-5.79%</td>
+      <td>19.48%</td>
+      <td>75.10%</td>
+      <td>18.64%</td>
     </tr>
     <tr>
       <td>Median</td>
-      <td>-0.05%</td>
-      <td>0.11%</td>
-      <td>1.28%</td>
-      <td>11.94%</td>
-      <td>28.33%</td>
-      <td>48.23%</td>
-      <td>80.71%</td>
-      <td>50.15%</td>
+      <td>-0.06%</td>
+      <td>0.15%</td>
+      <td>1.42%</td>
+      <td>12.00%</td>
+      <td>27.70%</td>
+      <td>48.04%</td>
+      <td>81.37%</td>
+      <td>49.54%</td>
     </tr>
     <tr>
       <td>Mean</td>
-      <td>1.81%</td>
-      <td>3.43%</td>
-      <td>6.29%</td>
-      <td>12.08%</td>
-      <td>19.42%</td>
-      <td>46.68%</td>
-      <td>87.98%</td>
-      <td>53.00%</td>
+      <td>1.78%</td>
+      <td>3.54%</td>
+      <td>6.42%</td>
+      <td>12.11%</td>
+      <td>19.39%</td>
+      <td>46.16%</td>
+      <td>88.32%</td>
+      <td>52.35%</td>
     </tr>
     <tr>
       <td>75th percentile</td>
-      <td>2.30%</td>
-      <td>3.66%</td>
-      <td>13.62%</td>
-      <td>25.87%</td>
-      <td>36.85%</td>
-      <td>84.78%</td>
-      <td>99.13%</td>
-      <td>86.33%</td>
+      <td>2.29%</td>
+      <td>3.82%</td>
+      <td>13.97%</td>
+      <td>25.49%</td>
+      <td>36.83%</td>
+      <td>84.60%</td>
+      <td>98.44%</td>
+      <td>86.21%</td>
     </tr>
     <tr>
       <td>Max</td>
@@ -321,10 +321,10 @@
   </thead>
   <tbody>
     <tr>
-      <td>421</td>
-      <td>-2.13%</td>
+      <td>424</td>
+      <td>-2.12%</td>
       <td>-3.33%</td>
-      <td>-3.90%</td>
+      <td>-3.89%</td>
       <td>-4.99%</td>
     </tr>
   </tbody>

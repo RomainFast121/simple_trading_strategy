@@ -1,32 +1,57 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Stage 4 — Institutional capacity analysis</title><style>
-    body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a;margin:0}
-    main{max-width:1480px;margin:auto;padding:38px 24px 70px}h1{margin:0 0 8px;font-size:30px}
-    h2{margin:34px 0 8px;font-size:20px}.sub,.caption{color:#64748b}.caption{font-size:13px;margin:0 0 12px}
-    .note{background:#eff6ff;border-left:4px solid #2563eb;padding:14px 16px;margin:22px 0;border-radius:6px}
-    .method{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:18px 0}
-    .card{background:white;border:1px solid #e2e8f0;border-radius:10px;padding:16px}.card h3{margin:0 0 7px;font-size:15px}.card p{margin:0;color:#475569;font-size:13px;line-height:1.5}
-    .card .formula{margin:10px 0 14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#0f172a;font:17px/1.9 Georgia,serif;text-align:center}
-    .scroll{overflow-x:auto;background:white;border:1px solid #e2e8f0;border-radius:10px}
-    table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:9px 8px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}th{background:#f1f5f9;color:#475569}
-    code{background:#f1f5f9;padding:2px 5px;border-radius:4px}.foot{margin-top:28px;color:#64748b;font-size:12px;line-height:1.55}
-    </style></head><body><main>
-    <h1>Stage 4 — Institutional capacity analysis</h1><p class='sub'>Compounded 10M reference account · 12h, 18h and 24h transition schedules · withdrawal-only capital reviews</p>
-    <div class='note'><strong>Purpose.</strong> This report estimates whether the confirmed ensemble can retain attractive economics at institutional size after transaction fees, funding, gradual execution and endogenous market impact. It is a retrospective capacity diagnostic, not a live execution guarantee.</div>
+<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Stage 4 — Institutional capacity analysis</title><style>@page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1120px; margin: 28px auto; color: #17202a; line-height: 1.42; }
+    h1 { margin: 0 0 0.35rem; font-size: 28px; color: #111827; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #dde3ea; padding-bottom: 0.35rem; font-size: 18px; color: #111827; }
+    h3 { font-size: 14px; margin: 1rem 0 0.4rem; color: #273244; }
+    p { margin: 0.45rem 0 0.9rem; }
+    .note { color: #5d6d7e; max-width: 900px; line-height: 1.45; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 12px 0 18px; }
+    .card { background: #f7f9fc; border: 1px solid #e1e8f0; border-radius: 12px; padding: 12px; min-width: 0; }
+    .card span { display: block; color: #64748b; font-size: 12px; margin-bottom: 4px; }
+    .card strong { display: block; color: #0f172a; font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .return-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(170px, 1fr); gap: 16px; align-items: stretch; }
+    .histogram { display: block; width: 100%; height: auto; }
+    .return-stats { display: flex; align-items: center; }
+    .return-stats table.data-table { width: auto; min-width: 145px; height: 100%; table-layout: auto; margin-top: 0; }
+    .return-stats .data-table th, .return-stats .data-table td { padding: 7px 10px; white-space: nowrap; }
+    table.data-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; margin-top: 0.75rem; font-size: 12px; border: 1px solid #dbe3ea; border-radius: 10px; overflow: hidden; background: #ffffff; }
+    .data-table th, .data-table td { border-bottom: 1px solid #e6ebf0; padding: 9px 10px; text-align: right; vertical-align: top; overflow-wrap: anywhere; }
+    .data-table th:first-child, .data-table td:first-child { text-align: left; }
+    .data-table th { background: #f1f4f7; color: #334155; font-weight: 650; }
+    .data-table tbody tr:nth-child(even) { background: #f8fafb; }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+    .fixed-window-table { overflow-x: auto; margin-top: 0.75rem; }
+    .fixed-window-table table.data-table { margin-top: 0; table-layout: auto; }
+    .fixed-window-table .data-table th { text-align: center; white-space: nowrap; }
+    .fixed-window-table .data-table th:first-child { text-align: left; }
+    .fixed-window-table .data-table td { white-space: nowrap; }
+    .fixed-window-table .data-table td:first-child { color: #334155; font-weight: 650; }
+    .split { margin-top: 8px; }
+    @media (max-width: 800px) { .cards, .grid, .return-grid { grid-template-columns: 1fr; } body { margin: 18px; } }
+    @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }.method { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .formula { padding:12px; background:#f7f9fc; border:1px solid #e1e8f0;
+      border-radius:10px; font:16px/1.8 Georgia,serif; text-align:center; }
+    .table-scroll { overflow-x:auto; }
+    .preferred { border:2px solid #0f766e; background:#f0fdfa; }
+    .foot { margin-top:28px; color:#64748b; font-size:12px; }
+    @media(max-width:800px){.method{grid-template-columns:1fr}}</style></head><body><main>
+    <h1>Stage 4 — Institutional capacity analysis</h1><p class='note'>Compounded 10M reference account · gradual execution · withdrawal-only capital reviews</p>
+    <p class='note'><strong>Purpose.</strong> This report estimates whether the confirmed ensemble can retain attractive economics at institutional size after transaction fees, funding, gradual execution and endogenous market impact. It is a retrospective capacity diagnostic, not a live execution guarantee.</p>
+    <div class='cards'><div class='card'><span>Development-selected case</span><strong>4m review · 18h execution</strong></div><div class='card'><span>OOS annual return</span><strong>86.21%</strong></div><div class='card'><span>OOS Sharpe</span><strong>1.73</strong></div><div class='card'><span>OOS maximum drawdown</span><strong>16.18%</strong></div></div>
     <div class='method'>
-      <div class='card'><h3>Target and execution</h3><p>The required quantity change is split equally across the first 12, 18 or 24 hourly bars.</p></div>
-      <div class='card'><h3>Three distinct costs</h3><p>A 5 bp transaction fee reduces both wealth and executed quantity. Funding charges 1 bp per day times gross exposure. Market impact uses coefficient one as an adverse performance cost and does not alter the quantity held.</p></div>
-      <div class='card'><h3>Capital reviews</h3><p>Every one or four months, wealth above 10M is withdrawn and retained outside the trading account. If the account is below 10M, nothing happens: capital is never injected.</p></div>
-      <div class='card'><h3>Risk calibration</h3><p>Each sleeve is independently scaled on development economic wealth to at most 20% drawdown, then the combined ensemble receives its own development-only scale. Those values are frozen OOS onward.</p></div>
+      <section class='card preferred'><h3>Development-selected evidence</h3><p>The preferred configuration is an 18-hour transition with capital reviewed every four months. It was selected from development evidence; its sleeve and ensemble multipliers are frozen and daily refreshes only extend the OOS result.</p></section>
+      <section class='card'><h3>Costs and capital</h3><p>A 5 bp transaction fee reduces wealth and executed quantity. Funding charges 1 bp per day times gross exposure. Market impact is an adverse performance cost and does not alter quantity. Reviews withdraw wealth above 10M and never inject capital.</p></section>
     </div>
     <h2>Impact model and interpretation</h2>
     <div class='method'>
-      <div class='card'><h3>Research-supported square-root model</h3><p class='formula'>&sigma;<sub>t,i</sub> = ln(H<sub>t,i</sub> / L<sub>t,i</sub>) / &radic;(4 ln 2)<br>I<sub>t,i</sub> = Y &sigma;<sub>t,i</sub> &radic;(Q<sub>t,i</sub> / V<sub>t,i</sub>), &nbsp;Y = 1<br>Cost<sup>impact</sup><sub>t,i</sub> = Q<sub>t,i</sub> I<sub>t,i</sub></p><p>This square-root relationship is supported by empirical market-impact research across assets and by Bitcoin metaorder evidence.</p></div>
-      <div class='card'><h3>Variables</h3><p>Q is the child-order notional executed during the hour and V is that hour's observed perpetual-futures quote volume. H and L are the hourly high and low; &sigma; is the matching Parkinson range-volatility estimate. I is the estimated fractional adverse price impact.</p></div>
-      <div class='card'><h3>Interpretation</h3><p>The observed execution midpoint captures favourable or adverse market movement while the order is worked. The additional square-root term estimates the expected mechanical footprint and is charged as a non-negative implementation cost. It is an average-impact model rather than a tick-level order-book simulation.</p></div>
+      <section class='card'><h3>Research-supported square-root model</h3><p class='formula'>&sigma;<sub>t,i</sub> = ln(H<sub>t,i</sub> / L<sub>t,i</sub>) / &radic;(4 ln 2)<br>I<sub>t,i</sub> = &sigma;<sub>t,i</sub> &radic;(Q<sub>t,i</sub> / V<sub>t,i</sub>)<br>Cost<sup>impact</sup><sub>t,i</sub> = Q<sub>t,i</sub>I<sub>t,i</sub></p><p>This relationship is supported by empirical market-impact research across assets and Bitcoin metaorders.</p></section>
+      <section class='card'><h3>Variables and interpretation</h3><p>Q is child-order notional, V is observed hourly quote volume, and H and L are the hourly high and low. The observed midpoint captures market movement while the order is worked; the square-root term estimates the expected mechanical footprint.</p></section>
     </div>
     <p class='caption'>Method references: <a href='https://arxiv.org/abs/2311.18283'>square-root market-impact research</a> and <a href='https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2536001'>Bitcoin metaorder evidence</a>.</p>
     <h2>Economic performance and consistency</h2><p class='caption'>Sharpe, volatility, win rate and rolling statistics use one all-cost daily return excluding withdrawals. Annual withdrawal is the total capital removed divided by the observed period in years. Annual return, drawdown and Calmar use total economic wealth: invested account value plus retained withdrawals.</p>
-    <div class='scroll'><table border="1" class="dataframe">
+    <div class='table-scroll'><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>Execution</th>
@@ -58,19 +83,6 @@
     </tr>
     <tr>
       <td>12h</td>
-      <td>1m</td>
-      <td>OOS onward</td>
-      <td>$12,455,950</td>
-      <td>99.00%</td>
-      <td>1.97</td>
-      <td>52.44%</td>
-      <td>16.29%</td>
-      <td>6.08</td>
-      <td>50.70%</td>
-      <td>0.40</td>
-    </tr>
-    <tr>
-      <td>12h</td>
       <td>4m</td>
       <td>Development</td>
       <td>$24,671,689</td>
@@ -81,19 +93,6 @@
       <td>7.27</td>
       <td>51.88%</td>
       <td>1.32</td>
-    </tr>
-    <tr>
-      <td>12h</td>
-      <td>4m</td>
-      <td>OOS onward</td>
-      <td>$13,606,534</td>
-      <td>112.91%</td>
-      <td>1.96</td>
-      <td>44.63%</td>
-      <td>15.23%</td>
-      <td>7.41</td>
-      <td>49.03%</td>
-      <td>0.38</td>
     </tr>
     <tr>
       <td>18h</td>
@@ -110,19 +109,6 @@
     </tr>
     <tr>
       <td>18h</td>
-      <td>1m</td>
-      <td>OOS onward</td>
-      <td>$11,226,937</td>
-      <td>87.60%</td>
-      <td>1.91</td>
-      <td>47.10%</td>
-      <td>17.32%</td>
-      <td>5.06</td>
-      <td>50.14%</td>
-      <td>0.33</td>
-    </tr>
-    <tr>
-      <td>18h</td>
       <td>4m</td>
       <td>Development</td>
       <td>$23,013,896</td>
@@ -133,19 +119,6 @@
       <td>6.91</td>
       <td>52.03%</td>
       <td>1.45</td>
-    </tr>
-    <tr>
-      <td>18h</td>
-      <td>4m</td>
-      <td>OOS onward</td>
-      <td>$11,837,715</td>
-      <td>96.27%</td>
-      <td>1.81</td>
-      <td>41.80%</td>
-      <td>16.31%</td>
-      <td>5.90</td>
-      <td>50.14%</td>
-      <td>0.28</td>
     </tr>
     <tr>
       <td>24h</td>
@@ -162,19 +135,6 @@
     </tr>
     <tr>
       <td>24h</td>
-      <td>1m</td>
-      <td>OOS onward</td>
-      <td>$10,361,938</td>
-      <td>78.98%</td>
-      <td>1.79</td>
-      <td>45.13%</td>
-      <td>16.93%</td>
-      <td>4.66</td>
-      <td>50.97%</td>
-      <td>0.36</td>
-    </tr>
-    <tr>
-      <td>24h</td>
       <td>4m</td>
       <td>Development</td>
       <td>$21,510,394</td>
@@ -187,22 +147,87 @@
       <td>1.44</td>
     </tr>
     <tr>
+      <td>12h</td>
+      <td>1m</td>
+      <td>OOS onward</td>
+      <td>$11,640,254</td>
+      <td>92.89%</td>
+      <td>1.97</td>
+      <td>49.47%</td>
+      <td>15.31%</td>
+      <td>6.07</td>
+      <td>50.35%</td>
+      <td>0.34</td>
+    </tr>
+    <tr>
+      <td>12h</td>
+      <td>4m</td>
+      <td>OOS onward</td>
+      <td>$12,530,882</td>
+      <td>102.92%</td>
+      <td>1.92</td>
+      <td>42.34%</td>
+      <td>14.64%</td>
+      <td>7.03</td>
+      <td>50.59%</td>
+      <td>0.25</td>
+    </tr>
+    <tr>
+      <td>18h</td>
+      <td>1m</td>
+      <td>OOS onward</td>
+      <td>$10,435,117</td>
+      <td>80.88%</td>
+      <td>1.89</td>
+      <td>44.24%</td>
+      <td>16.76%</td>
+      <td>4.83</td>
+      <td>51.06%</td>
+      <td>0.24</td>
+    </tr>
+    <tr>
+      <td>18h</td>
+      <td>4m</td>
+      <td>OOS onward</td>
+      <td>$10,780,278</td>
+      <td>86.21%</td>
+      <td>1.73</td>
+      <td>39.93%</td>
+      <td>16.18%</td>
+      <td>5.33</td>
+      <td>49.41%</td>
+      <td>0.18</td>
+    </tr>
+    <tr>
+      <td>24h</td>
+      <td>1m</td>
+      <td>OOS onward</td>
+      <td>$9,644,501</td>
+      <td>73.00%</td>
+      <td>1.76</td>
+      <td>42.43%</td>
+      <td>16.32%</td>
+      <td>4.47</td>
+      <td>50.82%</td>
+      <td>0.27</td>
+    </tr>
+    <tr>
       <td>24h</td>
       <td>4m</td>
       <td>OOS onward</td>
-      <td>$10,627,314</td>
-      <td>83.92%</td>
-      <td>1.65</td>
-      <td>40.25%</td>
-      <td>16.03%</td>
-      <td>5.23</td>
-      <td>49.40%</td>
-      <td>0.33</td>
+      <td>$9,690,053</td>
+      <td>75.04%</td>
+      <td>1.56</td>
+      <td>38.55%</td>
+      <td>17.49%</td>
+      <td>4.29</td>
+      <td>49.65%</td>
+      <td>0.17</td>
     </tr>
   </tbody>
 </table></div>
     <h2>OOS execution quality</h2><p class='caption'>Participation is child-order notional divided by observed hourly perpetual-futures quote volume. Dollar volume and asset identities are intentionally omitted.</p>
-    <div class='scroll'><table border="1" class="dataframe">
+    <div class='table-scroll'><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>Execution</th>
@@ -219,124 +244,124 @@
       <th>Average impact</th>
       <th>95% impact</th>
       <th>Maximum impact</th>
-      <th>Trades >1% volume</th>
-      <th>Trades >5% volume</th>
-      <th>Trades >10% volume</th>
+      <th>Trades &gt;1% volume</th>
+      <th>Trades &gt;5% volume</th>
+      <th>Trades &gt;10% volume</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>12h</td>
       <td>1m</td>
-      <td>22.34%</td>
-      <td>9.04%</td>
-      <td>24.25%</td>
-      <td>$2,508,016</td>
-      <td>$1,018,611</td>
-      <td>$2,710,349</td>
+      <td>21.97%</td>
+      <td>8.90%</td>
+      <td>23.87%</td>
+      <td>$2,525,948</td>
+      <td>$1,023,205</td>
+      <td>$2,728,351</td>
       <td>1.79%</td>
-      <td>7.72%</td>
-      <td>36.47%</td>
+      <td>7.70%</td>
+      <td>38.27%</td>
       <td>5.40 bp</td>
-      <td>16.63 bp</td>
-      <td>50.77 bp</td>
-      <td>22.92%</td>
-      <td>4.60%</td>
-      <td>1.14%</td>
+      <td>16.59 bp</td>
+      <td>50.44 bp</td>
+      <td>23.02%</td>
+      <td>4.55%</td>
+      <td>1.13%</td>
     </tr>
     <tr>
       <td>12h</td>
       <td>4m</td>
-      <td>21.08%</td>
-      <td>8.34%</td>
-      <td>24.01%</td>
-      <td>$2,760,615</td>
-      <td>$1,094,251</td>
-      <td>$3,164,358</td>
-      <td>1.92%</td>
-      <td>8.38%</td>
-      <td>41.90%</td>
-      <td>5.73 bp</td>
-      <td>17.72 bp</td>
-      <td>50.86 bp</td>
-      <td>24.65%</td>
-      <td>5.11%</td>
-      <td>1.23%</td>
+      <td>20.69%</td>
+      <td>8.18%</td>
+      <td>23.42%</td>
+      <td>$2,740,811</td>
+      <td>$1,082,597</td>
+      <td>$3,116,252</td>
+      <td>1.90%</td>
+      <td>8.32%</td>
+      <td>44.07%</td>
+      <td>5.68 bp</td>
+      <td>17.56 bp</td>
+      <td>50.22 bp</td>
+      <td>24.41%</td>
+      <td>4.92%</td>
+      <td>1.25%</td>
     </tr>
     <tr>
       <td>18h</td>
       <td>1m</td>
-      <td>21.40%</td>
-      <td>8.46%</td>
-      <td>19.13%</td>
-      <td>$2,406,097</td>
-      <td>$954,059</td>
-      <td>$2,132,950</td>
-      <td>1.32%</td>
-      <td>5.77%</td>
-      <td>28.35%</td>
-      <td>4.43 bp</td>
-      <td>13.70 bp</td>
-      <td>49.38 bp</td>
-      <td>18.59%</td>
-      <td>2.52%</td>
-      <td>0.44%</td>
+      <td>21.02%</td>
+      <td>8.33%</td>
+      <td>18.85%</td>
+      <td>$2,414,718</td>
+      <td>$955,738</td>
+      <td>$2,144,188</td>
+      <td>1.33%</td>
+      <td>5.79%</td>
+      <td>29.92%</td>
+      <td>4.44 bp</td>
+      <td>13.78 bp</td>
+      <td>49.50 bp</td>
+      <td>18.51%</td>
+      <td>2.49%</td>
+      <td>0.45%</td>
     </tr>
     <tr>
       <td>18h</td>
       <td>4m</td>
-      <td>20.88%</td>
-      <td>8.08%</td>
-      <td>19.77%</td>
-      <td>$2,682,981</td>
-      <td>$1,040,042</td>
-      <td>$2,540,684</td>
+      <td>20.52%</td>
+      <td>7.95%</td>
+      <td>19.36%</td>
+      <td>$2,664,035</td>
+      <td>$1,032,024</td>
+      <td>$2,510,805</td>
       <td>1.45%</td>
-      <td>6.26%</td>
-      <td>33.48%</td>
-      <td>4.73 bp</td>
-      <td>14.59 bp</td>
-      <td>61.33 bp</td>
-      <td>20.24%</td>
-      <td>3.01%</td>
+      <td>6.21%</td>
+      <td>34.93%</td>
+      <td>4.71 bp</td>
+      <td>14.58 bp</td>
+      <td>60.76 bp</td>
+      <td>19.88%</td>
+      <td>2.97%</td>
       <td>0.56%</td>
     </tr>
     <tr>
       <td>24h</td>
       <td>1m</td>
-      <td>20.84%</td>
-      <td>8.17%</td>
-      <td>15.87%</td>
-      <td>$2,349,736</td>
-      <td>$922,756</td>
-      <td>$1,770,114</td>
+      <td>20.46%</td>
+      <td>8.02%</td>
+      <td>15.60%</td>
+      <td>$2,355,509</td>
+      <td>$922,879</td>
+      <td>$1,774,896</td>
       <td>1.02%</td>
-      <td>4.47%</td>
-      <td>22.36%</td>
+      <td>4.46%</td>
+      <td>23.56%</td>
       <td>3.77 bp</td>
-      <td>11.76 bp</td>
-      <td>41.88 bp</td>
-      <td>15.16%</td>
-      <td>1.42%</td>
-      <td>0.13%</td>
+      <td>11.78 bp</td>
+      <td>41.98 bp</td>
+      <td>15.07%</td>
+      <td>1.41%</td>
+      <td>0.14%</td>
     </tr>
     <tr>
       <td>24h</td>
       <td>4m</td>
-      <td>20.41%</td>
-      <td>7.82%</td>
-      <td>16.38%</td>
-      <td>$2,597,450</td>
-      <td>$997,922</td>
-      <td>$2,077,875</td>
-      <td>1.11%</td>
-      <td>4.81%</td>
-      <td>26.11%</td>
-      <td>4.00 bp</td>
-      <td>12.46 bp</td>
-      <td>51.40 bp</td>
-      <td>16.44%</td>
-      <td>1.70%</td>
+      <td>20.05%</td>
+      <td>7.70%</td>
+      <td>16.01%</td>
+      <td>$2,578,372</td>
+      <td>$989,770</td>
+      <td>$2,051,990</td>
+      <td>1.10%</td>
+      <td>4.78%</td>
+      <td>27.13%</td>
+      <td>3.98 bp</td>
+      <td>12.44 bp</td>
+      <td>51.02 bp</td>
+      <td>16.15%</td>
+      <td>1.64%</td>
       <td>0.19%</td>
     </tr>
   </tbody>

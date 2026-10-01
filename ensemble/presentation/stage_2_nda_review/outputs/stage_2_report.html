@@ -37,7 +37,7 @@
 <body><h1>Stage 2 — Multi-Strategy Ensemble Replication</h1>
 <p class="note"><strong>Costs:</strong> Model and adjusted-position returns include 5 bps transaction fees on traded notional and a 1 bp/day funding allowance on gross invested exposure, deducted from wealth only. Costs apply once to the combined book. Live-account returns use recorded wealth without an additional modeled deduction.</p>
 <p class="note">Generated locally from ignored private allocation and strategy configurations. Exact sleeve weights and underlying operational parameters are intentionally not exported.</p>
-<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>21.27%</strong></div><div class='card'><span>Model average daily return</span><strong>0.35%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>58</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, and the live tracker. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
+<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>21.23%</strong></div><div class='card'><span>Model average daily return</span><strong>0.35%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>59</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, and the live tracker. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>section</th>
@@ -50,7 +50,7 @@
     <tr>
       <td>stage_2_model_forward</td>
       <td>2026-08-03</td>
-      <td>2026-09-30</td>
+      <td>2026-10-01</td>
       <td>frozen model-forward tracking through the last completed daily interval</td>
     </tr>
   </tbody>
@@ -67,12 +67,12 @@
   </thead>
   <tbody>
     <tr>
-      <td>-12.56%</td>
-      <td>3.59%</td>
-      <td>17.23%</td>
-      <td>22.94%</td>
-      <td>42.07%</td>
-      <td>77.23%</td>
+      <td>-11.41%</td>
+      <td>3.74%</td>
+      <td>17.37%</td>
+      <td>23.33%</td>
+      <td>42.83%</td>
+      <td>76.49%</td>
     </tr>
   </tbody>
 </table><h2>Model forward</h2><table class="dataframe data-table">
@@ -91,15 +91,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>21.27%</td>
-      <td>236.86%</td>
-      <td>3.31</td>
+      <td>21.23%</td>
+      <td>229.38%</td>
+      <td>3.27</td>
       <td>6.70%</td>
-      <td>35.34</td>
-      <td>100.00%</td>
-      <td>4.85%</td>
-      <td>58</td>
-      <td>56.90%</td>
+      <td>34.22</td>
+      <td>66.67%</td>
+      <td>-0.03%</td>
+      <td>59</td>
+      <td>55.93%</td>
     </tr>
   </tbody>
 </table><h2>Forward with adjusted position</h2><table class="dataframe data-table">
@@ -118,15 +118,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>22.01%</td>
-      <td>249.92%</td>
-      <td>3.36</td>
+      <td>21.99%</td>
+      <td>242.37%</td>
+      <td>3.33</td>
       <td>6.81%</td>
-      <td>36.69</td>
-      <td>100.00%</td>
-      <td>5.61%</td>
-      <td>58</td>
-      <td>56.90%</td>
+      <td>35.58</td>
+      <td>66.67%</td>
+      <td>-0.01%</td>
+      <td>59</td>
+      <td>55.93%</td>
     </tr>
   </tbody>
 </table><h2>Live tracking</h2><table class="dataframe data-table">
@@ -145,15 +145,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>21.75%</td>
-      <td>245.36%</td>
+      <td>21.97%</td>
+      <td>241.94%</td>
       <td>3.33</td>
       <td>6.97%</td>
-      <td>35.21</td>
+      <td>34.72</td>
       <td>100.00%</td>
-      <td>5.28%</td>
-      <td>58</td>
-      <td>55.17%</td>
+      <td>0.18%</td>
+      <td>59</td>
+      <td>55.93%</td>
     </tr>
   </tbody>
 </table></body></html>

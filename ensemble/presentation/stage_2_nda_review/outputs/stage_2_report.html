@@ -35,9 +35,10 @@
     @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }
   </style></head>
 <body><h1>Stage 2 — Multi-Strategy Ensemble Replication</h1>
-<p class="note"><strong>Costs:</strong> Model and adjusted-position returns include 5 bps transaction fees on traded notional and a 1 bp/day funding allowance on gross invested exposure, deducted from wealth only. Costs apply once to the combined book. Live-account returns use recorded wealth without an additional modeled deduction.</p>
+<p class="note"><strong>Costs:</strong> The return observed on 2 October 2026 still uses the prior 5 bp taker/market-order accounting. The post-only maker rule starts with orders placed on 2 October 2026, so its first corresponding return is observed on 3 October 2026. Maker fills pay 2 bps; unfilled quantities retain the prior holding. Adjusted tracking uses signed submitted and remaining quantities, actual entered prices, and 1 bp/day funding on the inferred post-fill gross holdings. Live returns use recorded account wealth. Model-forward tracking remains independent of operator entries.</p>
+
 <p class="note">Generated locally from ignored private allocation and strategy configurations. Exact sleeve weights and underlying operational parameters are intentionally not exported.</p>
-<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>21.23%</strong></div><div class='card'><span>Model average daily return</span><strong>0.35%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>59</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, and the live tracker. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
+<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>21.39%</strong></div><div class='card'><span>Model average daily return</span><strong>0.34%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>60</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, and the live tracker. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>section</th>
@@ -50,7 +51,7 @@
     <tr>
       <td>stage_2_model_forward</td>
       <td>2026-08-03</td>
-      <td>2026-10-01</td>
+      <td>2026-10-02</td>
       <td>frozen model-forward tracking through the last completed daily interval</td>
     </tr>
   </tbody>
@@ -67,12 +68,12 @@
   </thead>
   <tbody>
     <tr>
-      <td>-11.41%</td>
-      <td>3.74%</td>
-      <td>17.37%</td>
-      <td>23.33%</td>
-      <td>42.83%</td>
-      <td>76.49%</td>
+      <td>-11.13%</td>
+      <td>4.01%</td>
+      <td>18.32%</td>
+      <td>23.71%</td>
+      <td>43.56%</td>
+      <td>77.26%</td>
     </tr>
   </tbody>
 </table><h2>Model forward</h2><table class="dataframe data-table">
@@ -91,15 +92,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>21.23%</td>
-      <td>229.38%</td>
+      <td>21.39%</td>
+      <td>225.46%</td>
       <td>3.27</td>
       <td>6.70%</td>
-      <td>34.22</td>
-      <td>66.67%</td>
-      <td>-0.03%</td>
-      <td>59</td>
-      <td>55.93%</td>
+      <td>33.64</td>
+      <td>100.00%</td>
+      <td>0.10%</td>
+      <td>60</td>
+      <td>56.67%</td>
     </tr>
   </tbody>
 </table><h2>Forward with adjusted position</h2><table class="dataframe data-table">
@@ -118,15 +119,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>21.99%</td>
-      <td>242.37%</td>
-      <td>3.33</td>
+      <td>22.15%</td>
+      <td>238.04%</td>
+      <td>3.32</td>
       <td>6.81%</td>
-      <td>35.58</td>
-      <td>66.67%</td>
-      <td>-0.01%</td>
-      <td>59</td>
-      <td>55.93%</td>
+      <td>34.95</td>
+      <td>100.00%</td>
+      <td>0.12%</td>
+      <td>60</td>
+      <td>56.67%</td>
     </tr>
   </tbody>
 </table><h2>Live tracking</h2><table class="dataframe data-table">
@@ -145,15 +146,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>21.97%</td>
-      <td>241.94%</td>
-      <td>3.33</td>
+      <td>21.96%</td>
+      <td>234.83%</td>
+      <td>3.30</td>
       <td>6.97%</td>
-      <td>34.72</td>
+      <td>33.70</td>
       <td>100.00%</td>
-      <td>0.18%</td>
-      <td>59</td>
-      <td>55.93%</td>
+      <td>0.17%</td>
+      <td>60</td>
+      <td>55.00%</td>
     </tr>
   </tbody>
 </table></body></html>

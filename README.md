@@ -8,20 +8,20 @@ underlying replication evidence are maintained privately.
 
 ### Ensemble
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=fe5fe64)
-- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=1418b102b118)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=4651c8b9b9b0)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=4f2fe3b3907e)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=323133f2984b)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=c4316307ad19)
 
 ### Momentum
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_1_initial_review/outputs/stage_1_report.html)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=46d1c4526b67)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=be7a5fcd284c)
 
 ### Market neutral
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=4a6e2be2f925)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=78e5e1542795)
 
 ### Opening-range breakout
 
@@ -31,11 +31,12 @@ underlying replication evidence are maintained privately.
 ## What each stage shows
 
 **Stage 1** introduces the strategy, its rationale, and its main development and
-out-of-sample results. Each report shows the equity curve against a simple
+out-of-sample results. The reports show the equity curve against a simple
 market benchmark, annualized return and volatility, Sharpe ratio, maximum
-drawdown, positive-month frequency, and market correlation. Rolling Sharpe and
-benchmark-regression diagnostics help show whether performance is reasonably
-persistent and whether it comes from something beyond broad market exposure.
+drawdown, positive-month frequency, and market correlation. The sleeve and
+ensemble reviews use independently development-calibrated post-only execution
+scenarios, with modeled fills, maker fees, and funding. Benchmark-regression
+diagnostics help show whether performance comes from more than broad market exposure.
 It is the quickest way to understand the idea and judge whether the evidence is
 worth exploring further.
 
@@ -47,12 +48,16 @@ the model result within the distribution of same-length windows from the
 one-year out-of-sample period. Annualized return, Sharpe, and Calmar are added
 only after enough daily observations exist to make them meaningful. The
 underlying positions and daily operating files remain private.
+Earlier observations retain their original execution assumptions; the new
+post-only rule applies only to subsequent model targets and recorded trades.
 
 **Stage 3** is the deeper due-diligence view. It focuses on the post-freeze
 record rather than the development sample. Alongside return, Sharpe, drawdown,
 Calmar, and market-correlation metrics, it examines the return distribution,
-fixed-window consistency, the fraction of positive periods, fee sensitivity,
-empirical VaR and CVaR, and trading capacity relative to market volume. This is
+fixed-window consistency, and empirical VaR and CVaR. Execution and funding
+diagnostics accompany the maker-fill scenarios; the ensemble also includes
+fee sensitivity under immediate fills, with 5 bps as the taker reference, and
+capacity relative to market volume. This is
 the report intended for a closer assessment of robustness, implementation risk,
 and whether the strategy remains investable beyond its headline performance.
 
@@ -63,4 +68,8 @@ includes transaction fees, funding, and a research-based estimate of market
 impact. Alongside annual return, withdrawals, Sharpe, drawdown, and rolling
 consistency, it reports participation in hourly volume and estimated execution
 costs. This helps show how slower trading and account growth affect performance
-at scale; it is a modeled capacity study, not a guarantee of executable returns.
+at scale; it retains market-order transaction costs rather than assuming
+institutional post-only fills. Its 5 bps transaction charge is the explicit
+taker/direct-fill assumption because maker fill conditions are difficult to
+justify at that size. It is a modeled capacity study, not a guarantee
+of executable returns.

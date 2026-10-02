@@ -38,12 +38,7 @@
     .foot { margin-top:28px; color:#64748b; font-size:12px; }
     @media(max-width:800px){.method{grid-template-columns:1fr}}</style></head><body><main>
     <h1>Stage 4 — Institutional capacity analysis</h1><p class='note'>Compounded 10M reference account · gradual execution · withdrawal-only capital reviews</p>
-    <p class='note'><strong>Purpose.</strong> This report estimates whether the confirmed ensemble can retain attractive economics at institutional size after transaction fees, funding, gradual execution and endogenous market impact. It is a retrospective capacity diagnostic, not a live execution guarantee.</p>
-    <div class='cards'><div class='card'><span>Development-selected case</span><strong>4m review · 18h execution</strong></div><div class='card'><span>OOS annual return</span><strong>75.03%</strong></div><div class='card'><span>OOS Sharpe</span><strong>1.48</strong></div><div class='card'><span>OOS maximum drawdown</span><strong>17.30%</strong></div></div>
-    <div class='method'>
-      <section class='card preferred'><h3>Development-selected evidence</h3><p>The preferred configuration is an 18-hour transition with capital reviewed every four months. It was selected from development evidence; its sleeve and ensemble multipliers are frozen and daily refreshes only extend the OOS result.</p></section>
-      <section class='card'><h3>Costs and capital</h3><p>A 5 bp transaction fee reduces wealth and executed quantity. Funding charges 1 bp per day times gross exposure. Market impact is an adverse performance cost and does not alter quantity. Reviews withdraw wealth above 10M and never inject capital.</p></section>
-    </div>
+    <p class='note'><strong>Purpose.</strong> This report estimates whether the confirmed ensemble can retain attractive economics at institutional size after a 5 bp direct-fill taker fee, funding, gradual execution and endogenous market impact. Maker or post-only fills are not assumed because their fill condition is difficult to justify at institutional notional. It is a retrospective capacity diagnostic, not a live execution guarantee.</p>
     <h2>Impact model and interpretation</h2>
     <div class='method'>
       <section class='card'><h3>Research-supported square-root model</h3><p class='formula'>&sigma;<sub>t,i</sub> = ln(H<sub>t,i</sub> / L<sub>t,i</sub>) / &radic;(4 ln 2)<br>I<sub>t,i</sub> = &sigma;<sub>t,i</sub> &radic;(Q<sub>t,i</sub> / V<sub>t,i</sub>)<br>Cost<sup>impact</sup><sub>t,i</sub> = Q<sub>t,i</sub>I<sub>t,i</sub></p><p>This relationship is supported by empirical market-impact research across assets and Bitcoin metaorders.</p></section>
@@ -150,82 +145,87 @@
       <td>12h</td>
       <td>1m</td>
       <td>OOS onward</td>
-      <td>$10,969,197</td>
-      <td>81.43%</td>
-      <td>1.76</td>
-      <td>48.90%</td>
+      <td>$10,944,929</td>
+      <td>81.14%</td>
+      <td>1.75</td>
+      <td>48.85%</td>
       <td>15.31%</td>
-      <td>5.32</td>
-      <td>50.11%</td>
-      <td>0.10</td>
+      <td>5.30</td>
+      <td>50.00%</td>
+      <td>0.09</td>
     </tr>
     <tr>
       <td>12h</td>
       <td>4m</td>
       <td>OOS onward</td>
-      <td>$11,808,481</td>
-      <td>90.79%</td>
+      <td>$11,782,356</td>
+      <td>90.45%</td>
       <td>1.70</td>
-      <td>41.71%</td>
+      <td>41.66%</td>
       <td>14.89%</td>
-      <td>6.10</td>
-      <td>50.33%</td>
-      <td>-0.24</td>
+      <td>6.08</td>
+      <td>50.22%</td>
+      <td>-0.28</td>
     </tr>
     <tr>
       <td>18h</td>
       <td>1m</td>
       <td>OOS onward</td>
-      <td>$9,833,536</td>
-      <td>69.80%</td>
+      <td>$9,811,780</td>
+      <td>69.59%</td>
       <td>1.63</td>
-      <td>43.74%</td>
+      <td>43.69%</td>
       <td>16.77%</td>
-      <td>4.16</td>
-      <td>50.55%</td>
-      <td>-0.38</td>
+      <td>4.15</td>
+      <td>50.44%</td>
+      <td>-0.41</td>
     </tr>
     <tr>
       <td>18h</td>
       <td>4m</td>
       <td>OOS onward</td>
-      <td>$10,158,798</td>
-      <td>75.03%</td>
+      <td>$10,136,323</td>
+      <td>74.76%</td>
       <td>1.48</td>
-      <td>39.37%</td>
+      <td>39.33%</td>
       <td>17.30%</td>
-      <td>4.34</td>
-      <td>49.45%</td>
-      <td>-0.40</td>
+      <td>4.32</td>
+      <td>49.34%</td>
+      <td>-0.45</td>
     </tr>
     <tr>
       <td>24h</td>
       <td>1m</td>
       <td>OOS onward</td>
-      <td>$9,088,499</td>
-      <td>62.61%</td>
+      <td>$9,068,391</td>
+      <td>62.37%</td>
       <td>1.50</td>
-      <td>42.02%</td>
+      <td>41.97%</td>
       <td>17.75%</td>
-      <td>3.53</td>
-      <td>50.33%</td>
-      <td>-0.32</td>
+      <td>3.51</td>
+      <td>50.22%</td>
+      <td>-0.35</td>
     </tr>
     <tr>
       <td>24h</td>
       <td>4m</td>
       <td>OOS onward</td>
-      <td>$9,131,424</td>
-      <td>64.86%</td>
-      <td>1.32</td>
-      <td>38.08%</td>
+      <td>$9,111,222</td>
+      <td>64.57%</td>
+      <td>1.31</td>
+      <td>38.03%</td>
       <td>18.65%</td>
-      <td>3.48</td>
-      <td>49.45%</td>
-      <td>-0.38</td>
+      <td>3.46</td>
+      <td>49.34%</td>
+      <td>-0.39</td>
     </tr>
   </tbody>
 </table></div>
+    <div class='cards'><div class='card'><span>Highlighted capacity case</span><strong>4m review · 12h execution</strong></div><div class='card'><span>OOS annual return</span><strong>90.45%</strong></div><div class='card'><span>OOS Sharpe</span><strong>1.70</strong></div><div class='card'><span>OOS maximum drawdown</span><strong>14.89%</strong></div></div>
+    <div class='method'>
+      <section class='card preferred'><h3>Highlighted frozen case</h3><p>The highlighted configuration is a 12-hour transition with capital reviewed every four months. It uses its existing frozen development calibration; daily refreshes only extend the OOS result and never refit its multipliers.</p></section>
+      <section class='card'><h3>Costs and capital</h3><p>Each scheduled child order assumes direct taker execution and pays 5 bps because a maker or post-only fill condition is difficult to justify at institutional notional. The fee reduces both wealth and executed quantity. Funding charges 1 bp per day times gross exposure. Market impact is an adverse performance cost and does not alter quantity. Reviews withdraw wealth above 10M and never inject capital.</p></section>
+    </div>
     <h2>OOS execution quality</h2><p class='caption'>The trade-threshold columns report the share of hourly child orders exceeding 1%, 5% or 10% of the corresponding hour's perpetual-futures quote volume. Dollar values and asset identities are intentionally omitted.</p>
     <div class='table-scroll'><table class="dataframe data-table">
   <thead>
@@ -248,12 +248,12 @@
       <td>12h</td>
       <td>1m</td>
       <td>21.91%</td>
-      <td>8.93%</td>
-      <td>23.92%</td>
-      <td>5.42 bp</td>
-      <td>16.82 bp</td>
+      <td>8.92%</td>
+      <td>23.95%</td>
+      <td>5.43 bp</td>
+      <td>16.88 bp</td>
       <td>50.44 bp</td>
-      <td>22.72%</td>
+      <td>22.71%</td>
       <td>4.46%</td>
       <td>1.09%</td>
     </tr>
@@ -262,11 +262,11 @@
       <td>4m</td>
       <td>20.59%</td>
       <td>8.18%</td>
-      <td>23.34%</td>
+      <td>23.35%</td>
       <td>5.69 bp</td>
       <td>17.62 bp</td>
       <td>50.22 bp</td>
-      <td>24.02%</td>
+      <td>24.00%</td>
       <td>4.80%</td>
       <td>1.20%</td>
     </tr>
@@ -274,10 +274,10 @@
       <td>18h</td>
       <td>1m</td>
       <td>20.91%</td>
-      <td>8.33%</td>
-      <td>18.78%</td>
+      <td>8.32%</td>
+      <td>18.79%</td>
       <td>4.45 bp</td>
-      <td>13.89 bp</td>
+      <td>13.92 bp</td>
       <td>49.50 bp</td>
       <td>18.32%</td>
       <td>2.39%</td>
@@ -287,13 +287,13 @@
       <td>18h</td>
       <td>4m</td>
       <td>20.39%</td>
-      <td>7.95%</td>
-      <td>19.22%</td>
+      <td>7.94%</td>
+      <td>19.23%</td>
       <td>4.71 bp</td>
       <td>14.64 bp</td>
       <td>60.76 bp</td>
       <td>19.61%</td>
-      <td>2.85%</td>
+      <td>2.84%</td>
       <td>0.53%</td>
     </tr>
     <tr>
@@ -303,7 +303,7 @@
       <td>8.02%</td>
       <td>15.52%</td>
       <td>3.77 bp</td>
-      <td>11.85 bp</td>
+      <td>11.87 bp</td>
       <td>41.98 bp</td>
       <td>14.96%</td>
       <td>1.35%</td>
@@ -314,9 +314,9 @@
       <td>4m</td>
       <td>19.91%</td>
       <td>7.69%</td>
-      <td>15.89%</td>
+      <td>15.90%</td>
       <td>3.98 bp</td>
-      <td>12.49 bp</td>
+      <td>12.50 bp</td>
       <td>51.02 bp</td>
       <td>15.96%</td>
       <td>1.56%</td>

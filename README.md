@@ -4,14 +4,20 @@ This public repository contains presentation material only. Strategy source
 code, research notebooks, configurations, data, operational records, and the
 underlying replication evidence are maintained privately.
 
+## Main changes
+
+- 17 August 2026 — Revised the position-cap logic.
+- 2 October 2026 — Switched to post-only orders and updated the transaction-fee assumption.
+- 13 October 2026 — Additional control layer added to new ensemble targets.
+
 ## Public reports
 
 ### Ensemble
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=d7bae741eced)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=05d1e2f2645b)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=9fc096df1d66)
-- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=237798e0e9ef)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=7fa08981bb72)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=207b5f778250)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=bd9a5c3d6418)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=dcf8bc2cbabf)
 
 ### Momentum
 

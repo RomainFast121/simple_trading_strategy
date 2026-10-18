@@ -9,15 +9,16 @@ underlying replication evidence are maintained privately.
 - 17 August 2026 — Revised the position-cap logic.
 - 2 October 2026 — Switched to post-only orders and updated the transaction-fee assumption.
 - 13 October 2026 — Additional control layer added to the strategy sleeves before ensemble aggregation; development risk scales were recalibrated.
+- 19 October 2026 — Noise detection for market neutral added; development risk scales were recalibrated.
 
 ## Public reports
 
 ### Ensemble
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=791ae92e16c1)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=2dfeaae9041b)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=26b92d1a379e)
-- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=047a3faf6da7)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=973d0bc42bbd)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=87962b74457b)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=f999424e91ff)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=5d32626cb7e5)
 
 ### Momentum
 
@@ -26,8 +27,8 @@ underlying replication evidence are maintained privately.
 
 ### Market neutral
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=b783721f0a8f)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=6b23063f9108)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=05b63395e03c)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=159c9828e304)
 
 ### Opening-range breakout
 

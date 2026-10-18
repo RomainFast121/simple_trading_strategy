@@ -8,8 +8,8 @@ underlying replication evidence are maintained privately.
 
 - 17 August 2026 — Revised the position-cap logic.
 - 2 October 2026 — Switched to post-only orders and updated the transaction-fee assumption.
-- 13 October 2026 — Additional control layer added to the strategy sleeves before ensemble aggregation; development risk scales were recalibrated.
-- 19 October 2026 — Noise detection for market neutral added; development risk scales were recalibrated.
+- 13 October 2026 — Additional control layer added to the strategy sleeves before ensemble aggregation.
+- 19 October 2026 — Noise detection for market neutral added.
 
 ## Public reports
 

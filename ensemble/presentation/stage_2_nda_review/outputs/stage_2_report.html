@@ -38,7 +38,7 @@
 <p class="note"><strong>Costs:</strong> The return observed on 2 October 2026 still uses the prior 5 bp taker/market-order accounting. The post-only maker rule starts with orders placed on 2 October 2026, so its first corresponding return is observed on 3 October 2026. Maker fills pay 2 bps from wealth without shrinking the filled position; unfilled quantities retain the prior holding. Adjusted tracking uses signed submitted and remaining quantities, actual entered prices, and 1 bp/day funding on the inferred post-fill gross holdings. Live returns use recorded account wealth. Model-forward tracking remains independent of operator entries. An additional control layer begins with new targets on 13 October 2026; earlier archived targets and their returns remain unchanged.</p>
 
 <p class="note">Generated locally from ignored private allocation and strategy configurations. Exact sleeve weights and underlying operational parameters are intentionally not exported.</p>
-<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>20.86%</strong></div><div class='card'><span>Model average daily return</span><strong>0.25%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>80</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, the live tracker, and a hypothetical daily-buffer comparison. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
+<h2>Replication status</h2><div class='cards'><div class='card'><span>Model cumulative return</span><strong>20.70%</strong></div><div class='card'><span>Model average daily return</span><strong>0.25%</strong></div><div class='card'><span>Model-forward max DD</span><strong>6.70%</strong></div><div class='card'><span>Model-forward daily observations</span><strong>81</strong></div></div><p>Stage 2 is the operator view. Saved daily model targets remain the authoritative model-forward evidence across strategy updates, while recorded actual positions remain authoritative for adjusted and live tracking. The HTML keeps only this evidence, the adjusted-position forward tracker, the live tracker, and a hypothetical daily-buffer comparison. Position CSVs remain local and the report does not display final targets.</p><h2>Dates used in this package</h2><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>section</th>
@@ -51,7 +51,7 @@
     <tr>
       <td>stage_2_model_forward</td>
       <td>2026-08-03</td>
-      <td>2026-10-22</td>
+      <td>2026-10-23</td>
       <td>frozen model-forward tracking through the last completed daily interval</td>
     </tr>
   </tbody>
@@ -68,12 +68,12 @@
   </thead>
   <tbody>
     <tr>
-      <td>-10.55%</td>
-      <td>9.21%</td>
-      <td>27.88%</td>
-      <td>35.77%</td>
-      <td>56.14%</td>
-      <td>119.53%</td>
+      <td>-9.92%</td>
+      <td>9.30%</td>
+      <td>28.80%</td>
+      <td>36.22%</td>
+      <td>57.89%</td>
+      <td>115.17%</td>
     </tr>
   </tbody>
 </table><h2>Model forward</h2><table class="dataframe data-table">
@@ -92,15 +92,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>20.86%</td>
-      <td>137.50%</td>
-      <td>2.59</td>
+      <td>20.70%</td>
+      <td>133.60%</td>
+      <td>2.56</td>
       <td>6.70%</td>
-      <td>20.51</td>
+      <td>19.93</td>
       <td>66.67%</td>
-      <td>-0.34%</td>
-      <td>80</td>
-      <td>55.00%</td>
+      <td>-0.47%</td>
+      <td>81</td>
+      <td>54.32%</td>
     </tr>
   </tbody>
 </table><h2>Forward with adjusted position</h2><table class="dataframe data-table">
@@ -119,15 +119,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>23.10%</td>
-      <td>158.24%</td>
-      <td>2.80</td>
+      <td>22.93%</td>
+      <td>153.66%</td>
+      <td>2.77</td>
       <td>6.81%</td>
-      <td>23.23</td>
+      <td>22.56</td>
       <td>100.00%</td>
-      <td>0.89%</td>
-      <td>80</td>
-      <td>56.25%</td>
+      <td>0.76%</td>
+      <td>81</td>
+      <td>55.56%</td>
     </tr>
   </tbody>
 </table><h2>Live tracking</h2><table class="dataframe data-table">
@@ -146,15 +146,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>22.73%</td>
-      <td>154.78%</td>
-      <td>2.76</td>
+      <td>22.36%</td>
+      <td>148.45%</td>
+      <td>2.71</td>
       <td>6.97%</td>
-      <td>22.21</td>
+      <td>21.30</td>
       <td>100.00%</td>
-      <td>0.81%</td>
-      <td>80</td>
-      <td>53.75%</td>
+      <td>0.50%</td>
+      <td>81</td>
+      <td>53.09%</td>
     </tr>
   </tbody>
 </table><h2>Daily buffer</h2><table class="dataframe data-table">
@@ -173,15 +173,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>47.53%</td>
-      <td>490.24%</td>
-      <td>2.05</td>
+      <td>46.95%</td>
+      <td>467.22%</td>
+      <td>2.02</td>
       <td>31.95%</td>
-      <td>15.34</td>
+      <td>14.62</td>
       <td>66.67%</td>
-      <td>-7.84%</td>
-      <td>80</td>
-      <td>51.25%</td>
+      <td>-8.21%</td>
+      <td>81</td>
+      <td>50.62%</td>
     </tr>
   </tbody>
 </table><p class='note'>Daily buffer is a hypothetical replay of the latest rules throughout this period: virtual trading wealth resets each day to 3× real wealth. Reported performance and drawdown follow real wealth, excluding buffer transfers. Modeled fills are inherited from the strategy path.</p></body></html>

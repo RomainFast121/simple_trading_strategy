@@ -16,19 +16,19 @@ underlying replication evidence are maintained privately.
 ### Ensemble
 
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=973d0bc42bbd)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=bde254e632d5)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=cd11ab9e5f23)
-- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=c94636ab8d8b)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=6d6a0121180d)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=7b7057865a20)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=7611ec85a5cc)
 
 ### Momentum
 
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=3049ec5e28be)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=0671532805fb)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=303afa2b8354)
 
 ### Market neutral
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=2530be0a7689)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=27f35cd902e3)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=94437d1b5a01)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=5b8ccbc4a262)
 
 ### Opening-range breakout
 

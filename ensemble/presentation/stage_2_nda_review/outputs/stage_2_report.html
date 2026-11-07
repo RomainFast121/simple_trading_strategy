@@ -55,7 +55,7 @@
       <td>frozen model-forward tracking through the last completed daily interval</td>
     </tr>
   </tbody>
-</table><h3>Historical OOS same-length return distribution</h3><p class='note'>Each statistic summarizes compounded returns across every rolling window matching the current model-forward observation count across the complete OOS-onward path. This table is shown while the model-forward sample contains fewer than 180 daily observations. At 180 observations it is removed because the model-forward sample is then long enough that same-length historical windows stop being a useful early diagnostic.</p><table class="dataframe data-table">
+</table><h3>Historical OOS same-length return distribution</h3><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>minimum</th>
@@ -184,4 +184,4 @@
       <td>51.04%</td>
     </tr>
   </tbody>
-</table><p class='note'>Archived decisions throughout: virtual wealth is 3× real wealth for daily sizing; before adoption, returns hold the recorded fill pattern fixed.</p></body></html>
+</table><p class='note'>Adjusted positions use registered holdings and fills instead of modeled executions. Daily buffer sizes positions with virtual wealth equal to 3× real wealth, reset each day before orders.</p></body></html>

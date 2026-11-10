@@ -62,7 +62,7 @@ post-only rule applies only to subsequent model targets and recorded trades.
 **Stage 3** is the deeper due-diligence view. It focuses on the post-freeze
 record rather than the development sample. Alongside return, Sharpe, drawdown,
 Calmar, and market-correlation metrics, it examines the return distribution,
-fixed-window consistency, and empirical VaR and CVaR. Execution and funding
+fixed-window consistency, and empirical VaR and ES. Execution and funding
 diagnostics accompany the maker-fill scenarios; the ensemble also includes
 fee sensitivity under immediate fills, with 5 bps as the taker reference, and
 capacity relative to market volume. This is

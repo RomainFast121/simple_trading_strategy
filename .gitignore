@@ -8,20 +8,7 @@
 !/README.md
 !/index.html
 
-!/ORB/
-/ORB/*
-!/ORB/presentation/
-/ORB/presentation/*
-!/ORB/presentation/stage_1_initial_review/
-/ORB/presentation/stage_1_initial_review/*
-!/ORB/presentation/stage_1_initial_review/outputs/
-/ORB/presentation/stage_1_initial_review/outputs/*
-!/ORB/presentation/stage_1_initial_review/outputs/stage_1_report.html
-!/ORB/presentation/stage_3_paid_pilot/
-/ORB/presentation/stage_3_paid_pilot/*
-!/ORB/presentation/stage_3_paid_pilot/outputs/
-/ORB/presentation/stage_3_paid_pilot/outputs/*
-!/ORB/presentation/stage_3_paid_pilot/outputs/stage_3_report.html
+/ORB/
 
 !/ensemble/
 /ensemble/*
@@ -48,32 +35,6 @@
 /ensemble/presentation/stage_4_capacity_analysis/outputs/*
 !/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html
 
-!/market-neutral/
-/market-neutral/*
-!/market-neutral/presentation/
-/market-neutral/presentation/*
-!/market-neutral/presentation/stage_1_initial_review/
-/market-neutral/presentation/stage_1_initial_review/*
-!/market-neutral/presentation/stage_1_initial_review/outputs/
-/market-neutral/presentation/stage_1_initial_review/outputs/*
-!/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html
-!/market-neutral/presentation/stage_3_paid_pilot/
-/market-neutral/presentation/stage_3_paid_pilot/*
-!/market-neutral/presentation/stage_3_paid_pilot/outputs/
-/market-neutral/presentation/stage_3_paid_pilot/outputs/*
-!/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html
+/market-neutral/
 
-!/mom_crowding/
-/mom_crowding/*
-!/mom_crowding/presentation/
-/mom_crowding/presentation/*
-!/mom_crowding/presentation/stage_1_initial_review/
-/mom_crowding/presentation/stage_1_initial_review/*
-!/mom_crowding/presentation/stage_1_initial_review/outputs/
-/mom_crowding/presentation/stage_1_initial_review/outputs/*
-!/mom_crowding/presentation/stage_1_initial_review/outputs/stage_1_report.html
-!/mom_crowding/presentation/stage_3_paid_pilot/
-/mom_crowding/presentation/stage_3_paid_pilot/*
-!/mom_crowding/presentation/stage_3_paid_pilot/outputs/
-/mom_crowding/presentation/stage_3_paid_pilot/outputs/*
-!/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html
+/mom_crowding/

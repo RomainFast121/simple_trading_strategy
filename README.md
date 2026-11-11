@@ -6,78 +6,30 @@ underlying replication evidence are maintained privately.
 
 ## Main changes
 
-- 17 August 2026 — Revised the position-cap logic.
-- 2 October 2026 — Switched to post-only orders and updated the transaction-fee assumption.
-- 13 October 2026 — Additional control layer added to the strategy sleeves before ensemble aggregation.
-- 19 October 2026 — Noise detection for market neutral added.
-- 3 November 2026 — Change of the reference for momentum.
+- 17 August 2026: Revised the position-cap logic.
+- 2 October 2026: Switched to post-only orders and updated the transaction-fee assumption.
+- 13 October 2026: Added a control layer to the sleeves before ensemble aggregation.
+- 19 October 2026: Added noise detection for market neutral.
+- 3 November 2026: Changed the momentum reference.
 
-## Public reports
+## Public ensemble reports
 
-### Ensemble
-
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=e4b134fec7b0)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=b564ee263202)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=53de4813b664)
+- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=7573d8b42fc2)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=e389509ada23)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=66f9df54f40d)
 - [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=691d8a904968)
 
-### Momentum
+Assumed fees:
 
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=05bcc6372515)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/mom_crowding/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=d085e949b507)
-
-### Market neutral
-
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=c196ef69f2db)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/market-neutral/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=57a018fa0004)
-
-### Opening-range breakout
-
-- [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ORB/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=8863dd6e2277)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ORB/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=5d63d7b12b1a)
+- Transaction fees: 2 bp maker order fee in Stages 1 to 3. The simulation checks whether the price crosses the order; if it does, it assumes a full fill. Stage 4 assumes 5 bp taker fees.
+- Funding fees: 1 bp applied to the amount held during the day.
 
 ## What each stage shows
 
-**Stage 1** introduces the strategy, its rationale, and its main development and
-out-of-sample results. The reports show the equity curve against a simple
-market benchmark, annualized return and volatility, Sharpe ratio, maximum
-drawdown, positive-month frequency, and market correlation. The sleeve and
-ensemble reviews use independently development-calibrated post-only execution
-scenarios, with modeled fills, maker fees, and funding. Benchmark-regression
-diagnostics help show whether performance comes from more than broad market exposure.
-It is the quickest way to understand the idea and judge whether the evidence is
-worth exploring further.
+**Stage 1:** In-sample results compared with the one-year holdout period (out of sample, OOS). Includes equity curves, rolling 90-day Sharpe ratios, regressions against buy-and-hold and each sleeve, and core metrics.
 
-**Stage 2** follows the ensemble after launch. It compares the frozen model,
-the return implied by the positions actually held, and the live account using
-compact cumulative return, average daily return, drawdown, observation count,
-and win-rate summaries. While the live sample is still short, it also places
-the model result within the distribution of same-length windows from the
-one-year out-of-sample period. Annualized return, Sharpe, and Calmar are added
-only after enough daily observations exist to make them meaningful. The
-underlying positions and daily operating files remain private.
-Earlier observations retain their original execution assumptions; the new
-post-only rule applies only to subsequent model targets and recorded trades.
+**Stage 2:** Model and live-account comparison since live execution began on 3 August 2026.
 
-**Stage 3** is the deeper due-diligence view. It focuses on the post-freeze
-record rather than the development sample. Alongside return, Sharpe, drawdown,
-Calmar, and market-correlation metrics, it examines the return distribution,
-fixed-window consistency, and empirical VaR and ES. Execution and funding
-diagnostics accompany the maker-fill scenarios; the ensemble also includes
-fee sensitivity under immediate fills, with 5 bps as the taker reference, and
-capacity relative to market volume. This is
-the report intended for a closer assessment of robustness, implementation risk,
-and whether the strategy remains investable beyond its headline performance.
+**Stage 3:** Similar to Stage 1, but covers OOS onward and is updated daily.
 
-**Stage 4** explores the ensemble's capacity at institutional size. Starting
-with a compounded 10M reference account, it compares gradual execution over
-12, 18, and 24 hours and periodic withdrawals of excess capital. The simulation
-includes transaction fees, funding, and a research-based estimate of market
-impact. Alongside annual return, withdrawals, Sharpe, drawdown, and rolling
-consistency, it reports participation in hourly volume and estimated execution
-costs. This helps show how slower trading and account growth affect performance
-at scale; it retains market-order transaction costs rather than assuming
-institutional post-only fills. Its 5 bps transaction charge is the explicit
-taker/direct-fill assumption because maker fill conditions are difficult to
-justify at that size. It is a modeled capacity study, not a guarantee
-of executable returns.
+**Stage 4:** Models price impact using an assumed formula and tests its effect on a 10 million USDT account.

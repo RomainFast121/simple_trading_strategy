@@ -34,7 +34,7 @@
     @media (max-width: 800px) { .cards, .grid, .return-grid { grid-template-columns: 1fr; } body { margin: 18px; } }
     @media print { body { margin: 0; max-width: none; } section { break-inside: avoid; } table.data-table { font-size: 10.5px; } }
   </style></head>
-<body><h1>Stage 2: Multi-Strategy Ensemble Replication</h1><p>Stage 2 reports the model, model with adjusted orders, live account, and daily-buffer comparison since live replication began. Fees are included. Total return is <i>W</i><sub>end</sub> / <i>W</i><sub>start</sub> − 1; annualized return is (<i>W</i><sub>end</sub> / <i>W</i><sub>start</sub>)<sup>365.25 / <i>N</i></sup> − 1, where <i>N</i> is the number of daily observations. Other metrics use daily records, not intermediate values. Months are exact calendar months.</p><h2>Replication status</h2><div class='cards'><div class='card'><span>Live cumulative return</span><strong>34.00%</strong></div><div class='card'><span>Live average daily return</span><strong>0.31%</strong></div><div class='card'><span>Live max DD</span><strong>8.91%</strong></div><div class='card'><span>Live daily observations</span><strong>102</strong></div></div><h3>Historical OOS same-length return distribution</h3><table class="dataframe data-table">
+<body><h1>Stage 2: Multi-Strategy Ensemble Replication</h1><p>Stage 2 reports the model, model with adjusted orders, live account, and daily-buffer comparison since live replication began. Fees are included. Total return is <i>W</i><sub>end</sub> / <i>W</i><sub>start</sub> − 1; annualized return is (<i>W</i><sub>end</sub> / <i>W</i><sub>start</sub>)<sup>365.25 / <i>N</i></sup> − 1, where <i>N</i> is the number of daily observations. Other metrics use daily records, not intermediate values. Months are exact calendar months.</p><h2>Replication status</h2><div class='cards'><div class='card'><span>Live cumulative return</span><strong>35.30%</strong></div><div class='card'><span>Live average daily return</span><strong>0.31%</strong></div><div class='card'><span>Live max DD</span><strong>8.91%</strong></div><div class='card'><span>Live daily observations</span><strong>103</strong></div></div><h3>Historical OOS same-length return distribution</h3><table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>minimum</th>
@@ -47,12 +47,12 @@
   </thead>
   <tbody>
     <tr>
-      <td>-3.74%</td>
-      <td>18.39%</td>
-      <td>39.73%</td>
-      <td>45.04%</td>
-      <td>67.44%</td>
-      <td>151.01%</td>
+      <td>-3.54%</td>
+      <td>18.68%</td>
+      <td>39.16%</td>
+      <td>45.43%</td>
+      <td>69.41%</td>
+      <td>151.84%</td>
     </tr>
   </tbody>
 </table><h2>Model forward</h2><p>Model metrics use the same method as OOS.</p><table class="dataframe data-table">
@@ -71,15 +71,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>27.77%</td>
-      <td>140.50%</td>
-      <td>2.53</td>
+      <td>29.31%</td>
+      <td>148.78%</td>
+      <td>2.63</td>
       <td>11.22%</td>
-      <td>12.52</td>
+      <td>13.26</td>
       <td>75.00%</td>
       <td>-0.56%</td>
-      <td>102</td>
-      <td>54.90%</td>
+      <td>103</td>
+      <td>55.34%</td>
     </tr>
   </tbody>
 </table><h2>Forward with adjusted position</h2><p>Uses exact recorded trade prices and quantities, which can differ from submitted orders because of minimum sizes or execution prices.</p><table class="dataframe data-table">
@@ -98,15 +98,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>33.13%</td>
-      <td>178.65%</td>
-      <td>2.92</td>
+      <td>34.70%</td>
+      <td>187.58%</td>
+      <td>3.02</td>
       <td>9.09%</td>
-      <td>19.66</td>
+      <td>20.64</td>
       <td>100.00%</td>
       <td>1.14%</td>
-      <td>102</td>
-      <td>55.88%</td>
+      <td>103</td>
+      <td>56.31%</td>
     </tr>
   </tbody>
 </table><h2>Live tracking</h2><p>Uses registered wealth directly.</p><table class="dataframe data-table">
@@ -125,15 +125,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>34.00%</td>
-      <td>185.17%</td>
-      <td>2.99</td>
+      <td>35.30%</td>
+      <td>192.14%</td>
+      <td>3.06</td>
       <td>8.91%</td>
-      <td>20.78</td>
+      <td>21.57</td>
       <td>100.00%</td>
       <td>1.31%</td>
-      <td>102</td>
-      <td>53.92%</td>
+      <td>103</td>
+      <td>54.37%</td>
     </tr>
   </tbody>
 </table><h2>Daily buffer</h2><p>Simulates a 3× buffer adjusted daily: trades use virtual wealth equal to 3× real wealth. Metrics use the real-wealth path.</p><table class="dataframe data-table">
@@ -152,15 +152,15 @@
   </thead>
   <tbody>
     <tr>
-      <td>116.23%</td>
-      <td>1482.40%</td>
-      <td>2.99</td>
+      <td>122.54%</td>
+      <td>1605.82%</td>
+      <td>3.06</td>
       <td>25.25%</td>
-      <td>58.70</td>
+      <td>63.59</td>
       <td>100.00%</td>
       <td>2.59%</td>
-      <td>102</td>
-      <td>53.92%</td>
+      <td>103</td>
+      <td>54.37%</td>
     </tr>
   </tbody>
 </table></body></html>

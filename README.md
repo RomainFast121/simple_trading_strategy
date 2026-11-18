@@ -15,9 +15,9 @@ underlying replication evidence are maintained privately.
 ## Public ensemble reports
 
 - [Stage 1](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_1_initial_review/outputs/stage_1_report.html?v=7573d8b42fc2)
-- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=4b5e9cb38736)
-- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=9ea094318f28)
-- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=f5f1834693d1)
+- [Stage 2](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_2_nda_review/outputs/stage_2_report.html?v=2c82f250bd58)
+- [Stage 3](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_3_paid_pilot/outputs/stage_3_report.html?v=2930a4d877ba)
+- [Stage 4](https://romainfast121.github.io/simple_trading_strategy/ensemble/presentation/stage_4_capacity_analysis/outputs/stage_4_report.html?v=8b2e30854265)
 
 Assumed fees:
 
